@@ -636,17 +636,17 @@ richness_breaks <- c(0, 40, 62)
 
 # Adjusted representation targets based on the two groups
 # I.e., if PU has < 36 species, do not prioritise. If > 41 species, must be included in optimal reserve network
-richness_targets <- c(0.0, 0.9)
+richness_targets <- c(0, 0.8)
 
 # Initialize an empty list to store the individual raster layers for the two groups
 richness_layers <- list()
-# Loop to create layers for the two specified ranges
+# Loop through the breaks to create new raster layers
 for (i in 1:(length(richness_breaks) - 1)) {
   lower_bound <- richness_breaks[i]
   upper_bound <- richness_breaks[i + 1]
-  # Create a new raster layer for each range, setting cells outside the range to NA
+  # Create a new raster layer for each range, setting cells within the range to 1 and others to 0
   curr_layer <- app(sum_richness, fun = function(x) {
-    ifelse(x >= lower_bound & x < upper_bound, x, NA)
+    ifelse(x >= lower_bound & x < upper_bound, 1, 0)
   })
   # Add the current raster layer to the list
   richness_layers[[i]] <- curr_layer
