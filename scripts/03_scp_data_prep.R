@@ -636,7 +636,7 @@ richness_breaks <- c(0, 40, 62)
 
 # Adjusted representation targets based on the two groups
 # I.e., if PU has < 36 species, do not prioritise. If > 41 species, must be included in optimal reserve network
-richness_targets <- c(0, 0.8)
+richness_targets <- c(0, 0.9)
 
 # Initialize an empty list to store the individual raster layers for the two groups
 richness_layers <- list()
