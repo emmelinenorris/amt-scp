@@ -92,7 +92,7 @@ tcs1.1 <- eval_target_coverage_summary(cp1.1, s1.1x)
 sum(st_area(s1.1[which(s1.1x$solution_1 == 1),])) # Approx. 499,359 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp1.1, s1.1x) # Boundary length = 28,788,628 km
+eval_boundary_summary(cp1.1, s1.1x) # Boundary length = 28,788 km
 
 # Calculate the number and proportion of selected PUs in each land use category
 s1.1_df <- s1.1 %>%
@@ -176,6 +176,8 @@ ggsave("04_sp1_1.tiff", units="cm", width=30, height=15, dpi=300, compression = 
 
 #### OBJECTIVE 1 (add to existing PA network); CRITERIA 2 (positive latent risk) ####
 
+## CRITERIA 2: PRIORITISE HIGH POSITIVE LATENT RISK SPECIES
+
 cp1.2 = problem(pu_dat, species, cost_column = "cost") %>%
   add_min_set_objective() %>% # sets same minimum objective
   add_relative_targets(spec_dat$target_2) %>% # specifies relative targets for each feature
@@ -202,7 +204,7 @@ tcs1.2 <- eval_target_coverage_summary(cp1.2, s1.2x)
 sum(st_area(s1.2[which(s1.2x$solution_1 == 1),])) # Approx. 578,983 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp1.2, s1.2x) # Boundary length = 32,133,880 km
+eval_boundary_summary(cp1.2, s1.2x) # Boundary length = 32,133 km
 
 # Calculate the number and proportion of selected PUs in each land use category
 s1.2_df <- s1.2 %>%
@@ -312,7 +314,7 @@ tcs1.3 <- eval_target_coverage_summary(cp1.3, s1.3x)
 sum(st_area(s1.3[which(s1.3x$solution_1 == 1),])) # Approx. 501,056 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp1.3, s1.3x) # Boundary length = 28,366,120 km
+eval_boundary_summary(cp1.3, s1.3x) # Boundary length = 28,366 km
 
 # Calculate the number and proportion of selected PUs in each land use category
 s1.3_df <- s1.3 %>%
@@ -393,3 +395,347 @@ ggplot(data = s1.3_df) +
 
 ggsave("04_sp1_3.tiff", units="cm", width=30, height=15, dpi=300, compression = 'lzw', path = "results/fig/scp", bg  = 'white')
 
+
+#### OBJECTIVE 2 (growing IPA network through voluntary declaration of Native Title land); CRITERIA 1 (threatened species) ####
+
+## CRITERIA 1: PRIORITISE CURRENTLY THREATENED SPECIES
+
+cp2.1 = problem(pu_dat, species, cost_column = "cost_adjusted") %>% # Use cost adjusted to reduce cost of declaring Native Title/Indigenous Freehold land
+  add_min_set_objective() %>% # sets same minimum objective
+  add_relative_targets(spec_dat$target_1) %>% # specifies relative targets for each feature
+  add_locked_in_constraints("locked_in") %>% # lock in current protected area network (PAN)
+  add_binary_decisions() %>% # solution produced involves either a 'selected' planning unit or 'unselected' planning unit
+  add_gurobi_solver(gap = 0)  # value of 0 will result in the solver stopping only when it has found the optimal solution
+
+# Generate the optimal solution
+s2.1 = solve(cp2.1)
+s2.1 <- st_as_sf(s2.1) # Convert to sf 
+s2.1x <- s2.1[, "solution_1", drop = FALSE]
+
+# Calculate number of selected planning units additional to existing PA network
+eval_n_summary(cp2.1, s2.1x)[[2]] - pa_pus # TOTAL PUs = 309
+
+# Calculate total cost of solution
+eval_cost_summary(cp2.1, s2.1x)[[2]] - pa_cost # TOTAL COST = 888.91
+
+# Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
+tcs2.1 <- eval_target_coverage_summary(cp2.1, s2.1x)
+# 100% of targets for threatened species met or exceeded
+
+# Calculate total area of PA network (including existing PAs)
+sum(st_area(s2.1[which(s2.1x$solution_1 == 1),])) # Approx. 498,949 km^2
+
+# Calculate the exposed boundary length (perimeter) associated with a solution
+eval_boundary_summary(cp2.1, s2.1x) # Boundary length = 30,138 km
+
+# Calculate the number and proportion of selected PUs in each land use category
+s2.1_df <- s2.1 %>%
+  filter(solution_1 == 1) %>%
+  group_by(category) %>%
+  summarise(Count = n()) %>%
+  mutate(
+    Proportion = Count / sum(Count),
+    status = case_when(
+      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+      TRUE ~ "Not Protected"))
+
+# Convert 'land_type' column to a factor with levels in the specific order
+s2.1_df$category <- factor(s2.1_df$category, levels = c("Protected Area", 
+                                                        "Indigenous Protected Area", 
+                                                        "Freehold - Indigenous", 
+                                                        "Native Title land", 
+                                                        "Indigenous Land Use Agreement", 
+                                                        "Native Title land - Pastoral use",
+                                                        "Indigenous Land Use Agreement - Pastoral use",
+                                                        "Pastoral term or perpetual lease", 
+                                                        "Other freehold, term, perpetual lease or Crown purposes"))
+
+# Plot optimal solution
+ggplot(data = s2.1_df) +
+  geom_sf(mapping = aes(fill = status), color = "transparent") +
+  scale_fill_manual(values = c("Not Protected" = "#af8dc3", "Protected" = "#7fbf7b"),
+                    labels = c("Selected; Not Protected",
+                               "Protected Area")) +
+  geom_sf(data = amt, fill = "transparent", color = "black", size = 0.8) +
+  geom_sf(data = wt, fill = "black", color = "black", size = 0.4) +
+  theme_minimal() +
+  theme(legend.text = element_text(size = 12),
+        legend.key = element_rect(colour = "black"),
+        legend.title = element_blank(),
+        legend.position = "right",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+# Plot optimal solution
+ggplot(data = s2.1_df) +
+  geom_sf(mapping = aes(fill = factor(category)), color = "transparent") +
+  scale_fill_manual(values = c("#35978f",  # Protected Area
+                               "#2d6969",  # Indigenous Protected Area
+                               "#45581c",  # Freehold - Indigenous
+                               "#72922f",  # Native Title land
+                               "#afd57e",  # Indigenous Land Use Agreement
+                               "#976222",  # Native Title land - Pastoral use
+                               "#d09855",  # Indigenous Land Use Agreement - Pastoral use
+                               "#e4c49e",  # Pastoral term or perpetual lease
+                               "#e15fab"), # Other freehold, term, perpetual lease or Crown purposes
+                    labels = c("Protected Area", 
+                               "Indigenous Protected Area", 
+                               "Freehold - Indigenous", 
+                               "Native Title land",
+                               "Indigenous Land Use Agreement",
+                               "Native Title land - Pastoral use",
+                               "Indigenous Land Use Agreement - Pastoral use",
+                               "Pastoral term or perpetual lease", 
+                               "Other freehold, term, perpetual lease or Crown purposes")) +
+  geom_sf(data = amt, fill = "transparent", color = "black", size = 1) +
+  geom_sf(data = wt, fill = "black", color = "black", size = 1) +
+  theme_classic() +
+  theme(legend.text = element_text(size = 10),
+        legend.key = element_rect(colour = "transparent"),
+        legend.title = element_blank(),
+        legend.position = "right",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,0,-10,-30))
+
+ggsave("04_sp2_1.tiff", units="cm", width=30, height=15, dpi=300, compression = 'lzw', path = "results/fig/scp", bg  = 'white')
+
+
+#### OBJECTIVE 2 (growing IPA network through voluntary declaration of Native Title land); CRITERIA 2 (positive latent risk) ####
+
+## CRITERIA 2: PRIORITISE HIGH POSITIVE LATENT RISK SPECIES
+
+cp2.2 = problem(pu_dat, species, cost_column = "cost_adjusted") %>%
+  add_min_set_objective() %>% # sets same minimum objective
+  add_relative_targets(spec_dat$target_2) %>% # specifies relative targets for each feature
+  add_locked_in_constraints("locked_in") %>% # lock in current protected area network (PAN)
+  add_binary_decisions() %>% # solution produced involves either a 'selected' planning unit or 'unselected' planning unit
+  add_gurobi_solver(gap = 0)  # value of 0 will result in the solver stopping only when it has found the optimal solution
+
+# Generate the optimal solution
+s2.2 = solve(cp2.2)
+s2.2 <- st_as_sf(s2.2) # Convert to sf 
+s2.2x <- s2.2[, "solution_1", drop = FALSE]
+
+# Calculate number of selected planning units additional to existing PA network
+eval_n_summary(cp2.2, s2.2x)[[2]] - pa_pus # TOTAL PUs = 838
+
+# Calculate total cost of solution
+eval_cost_summary(cp2.2, s2.2x)[[2]] - pa_cost # TOTAL COST = 1024.06
+
+# Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
+tcs2.2 <- eval_target_coverage_summary(cp2.2, s2.2x)
+# 100% of targets for threatened species met or exceeded
+
+# Calculate total area of PA network (including existing PAs)
+sum(st_area(s2.2[which(s2.2x$solution_1 == 1),])) # Approx. 576,866 km^2
+
+# Calculate the exposed boundary length (perimeter) associated with a solution
+eval_boundary_summary(cp2.2, s2.2x) # Boundary length = 30,526 km
+
+# Calculate the number and proportion of selected PUs in each land use category
+s2.2_df <- s2.2 %>%
+  filter(solution_1 == 1) %>%
+  group_by(category) %>%
+  summarise(Count = n()) %>%
+  mutate(
+    Proportion = Count / sum(Count),
+    status = case_when(
+      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+      TRUE ~ "Not Protected"))
+
+# Convert 'land_type' column to a factor with levels in the specific order
+s2.2_df$category <- factor(s2.2_df$category, levels = c("Protected Area", 
+                                                        "Indigenous Protected Area", 
+                                                        "Freehold - Indigenous", 
+                                                        "Native Title land", 
+                                                        "Indigenous Land Use Agreement", 
+                                                        "Native Title land - Pastoral use",
+                                                        "Indigenous Land Use Agreement - Pastoral use",
+                                                        "Pastoral term or perpetual lease", 
+                                                        "Other freehold, term, perpetual lease or Crown purposes"))
+
+# Plot optimal solution
+ggplot(data = s2.2_df) +
+  geom_sf(mapping = aes(fill = status), color = "transparent") +
+  scale_fill_manual(values = c("Not Protected" = "#af8dc3", "Protected" = "#7fbf7b"),
+                    labels = c("Selected; Not Protected",
+                               "Protected Area")) +
+  geom_sf(data = amt, fill = "transparent", color = "black", size = 0.8) +
+  geom_sf(data = wt, fill = "black", color = "black", size = 0.4) +
+  theme_minimal() +
+  theme(legend.text = element_text(size = 12),
+        legend.key = element_rect(colour = "black"),
+        legend.title = element_blank(),
+        legend.position = "right",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+# Plot optimal solution
+ggplot(data = s2.2_df) +
+  geom_sf(mapping = aes(fill = factor(category)), color = "transparent") +
+  scale_fill_manual(values = c("#35978f",  # Protected Area
+                               "#2d6969",  # Indigenous Protected Area
+                               "#45581c",  # Freehold - Indigenous
+                               "#72922f",  # Native Title land
+                               "#afd57e",  # Indigenous Land Use Agreement
+                               "#976222",  # Native Title land - Pastoral use
+                               "#d09855",  # Indigenous Land Use Agreement - Pastoral use
+                               "#e4c49e",  # Pastoral term or perpetual lease
+                               "#e15fab"), # Other freehold, term, perpetual lease or Crown purposes
+                    labels = c("Protected Area", 
+                               "Indigenous Protected Area", 
+                               "Freehold - Indigenous", 
+                               "Native Title land",
+                               "Indigenous Land Use Agreement",
+                               "Native Title land - Pastoral use",
+                               "Indigenous Land Use Agreement - Pastoral use",
+                               "Pastoral term or perpetual lease", 
+                               "Other freehold, term, perpetual lease or Crown purposes")) +
+  geom_sf(data = amt, fill = "transparent", color = "black", size = 1) +
+  geom_sf(data = wt, fill = "black", color = "black", size = 1) +
+  theme_classic() +
+  theme(legend.text = element_text(size = 10),
+        legend.key = element_rect(colour = "transparent"),
+        legend.title = element_blank(),
+        legend.position = "right",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,0,-10,-30))
+
+ggsave("04_sp2_2.tiff", units="cm", width=30, height=15, dpi=300, compression = 'lzw', path = "results/fig/scp", bg  = 'white')
+
+
+#### OBJECTIVE 2 (growing IPA network through voluntary declaration of Native Title land); CRITERIA 3 (species richness) ####
+
+cp2.3 = problem(pu_dat, richness_stack, cost_column = "cost_adjusted") %>%
+  add_min_set_objective() %>% # sets same minimum objective
+  add_relative_targets(richness_df$target_3) %>% # specifies relative targets species richness classes
+  add_locked_in_constraints("locked_in") %>% # lock in current protected area network (PAN)
+  add_binary_decisions() %>% # solution produced involves either a 'selected' planning unit or 'unselected' planning unit
+  add_gurobi_solver(gap = 0)  # value of 0 will result in the solver stopping only when it has found the optimal solution
+
+# Generate the optimal solution
+s2.3 = solve(cp2.3)
+s2.3 <- st_as_sf(s2.3) # Convert to sf 
+s2.3x <- s2.3[, "solution_1", drop = FALSE]
+
+# Calculate number of selected planning units additional to existing PA network
+eval_n_summary(cp2.3, s2.3x)[[2]] - pa_pus # TOTAL PUs = 327 
+
+# Calculate total cost of solution
+eval_cost_summary(cp2.3, s2.3x)[[2]] - pa_cost # TOTAL COST = 918.9
+
+# Calculate how well feature representation targets are met by a solution
+tcs2.3 <- eval_target_coverage_summary(cp2.3, s2.3x)
+# Species richness target exceeded
+
+# Calculate total area of PA network (including existing PAs)
+sum(st_area(s2.3[which(s2.3x$solution_1 == 1),])) # Approx. 501,378 km^2
+
+# Calculate the exposed boundary length (perimeter) associated with a solution
+eval_boundary_summary(cp2.3, s2.3x) # Boundary length = 28,405 km
+
+# Calculate the number and proportion of selected PUs in each land use category
+s2.3_df <- s2.3 %>%
+  filter(solution_1 == 1) %>%
+  group_by(category) %>%
+  summarise(Count = n()) %>%
+  mutate(
+    Proportion = Count / sum(Count),
+    status = case_when(
+      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+      TRUE ~ "Not Protected"))
+
+# Convert 'land_type' column to a factor with levels in the specific order
+s2.3_df$category <- factor(s2.3_df$category, levels = c("Protected Area", 
+                                                        "Indigenous Protected Area", 
+                                                        "Freehold - Indigenous", 
+                                                        "Native Title land", 
+                                                        "Indigenous Land Use Agreement", 
+                                                        "Native Title land - Pastoral use",
+                                                        "Indigenous Land Use Agreement - Pastoral use",
+                                                        "Pastoral term or perpetual lease", 
+                                                        "Other freehold, term, perpetual lease or Crown purposes"))
+
+# Plot optimal solution
+ggplot(data = s2.3_df) +
+  geom_sf(mapping = aes(fill = status), color = "transparent") +
+  scale_fill_manual(values = c("Not Protected" = "#af8dc3", "Protected" = "#7fbf7b"),
+                    labels = c("Selected; Not Protected",
+                               "Protected Area")) +
+  geom_sf(data = amt, fill = "transparent", color = "black", size = 0.8) +
+  geom_sf(data = wt, fill = "black", color = "black", size = 0.4) +
+  theme_minimal() +
+  theme(legend.text = element_text(size = 12),
+        legend.key = element_rect(colour = "black"),
+        legend.title = element_blank(),
+        legend.position = "right",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+# Plot optimal solution
+ggplot(data = s2.3_df) +
+  geom_sf(mapping = aes(fill = factor(category)), color = "transparent") +
+  scale_fill_manual(values = c("#35978f",  # Protected Area
+                               "#2d6969",  # Indigenous Protected Area
+                               "#45581c",  # Freehold - Indigenous
+                               "#72922f",  # Native Title land
+                               "#afd57e",  # Indigenous Land Use Agreement
+                               "#976222",  # Native Title land - Pastoral use
+                               "#d09855",  # Indigenous Land Use Agreement - Pastoral use
+                               "#e4c49e",  # Pastoral term or perpetual lease
+                               "#e15fab"), # Other freehold, term, perpetual lease or Crown purposes
+                    labels = c("Protected Area", 
+                               "Indigenous Protected Area", 
+                               "Freehold - Indigenous", 
+                               "Native Title land",
+                               "Indigenous Land Use Agreement",
+                               "Native Title land - Pastoral use",
+                               "Indigenous Land Use Agreement - Pastoral use",
+                               "Pastoral term or perpetual lease", 
+                               "Other freehold, term, perpetual lease or Crown purposes")) +
+  geom_sf(data = amt, fill = "transparent", color = "black", size = 1) +
+  geom_sf(data = wt, fill = "black", color = "black", size = 1) +
+  theme_classic() +
+  theme(legend.text = element_text(size = 10),
+        legend.key = element_rect(colour = "transparent"),
+        legend.title = element_blank(),
+        legend.position = "right",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,0,-10,-30))
+
+ggsave("04_sp2_3.tiff", units="cm", width=30, height=15, dpi=300, compression = 'lzw', path = "results/fig/scp", bg  = 'white')
+
+
+
+
+# Boxplot of range of cost values for each land category
+ggplot(pu_dat, aes(x = category, y = cost_adjusted, fill = category)) +
+  geom_boxplot() +
+  labs(x = "Land Category", y = "Cost Proxy Value") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none")
