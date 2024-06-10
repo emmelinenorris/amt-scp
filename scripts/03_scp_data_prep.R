@@ -664,7 +664,7 @@ rich_group <- c("rich_0_40", "rich_41_62")
 # Assign the new names to the layers in the stack
 names(richness_lyr_stack) <- rich_group
 # Export the raster as a TIFF file
-writeRaster(richness_stack, filename="data/output-data/tif/03_richness_stack.tif", overwrite=TRUE)
+writeRaster(richness_lyr_stack, filename="data/output-data/tif/03_richness_stack.tif", overwrite=TRUE)
 
 # Create a data frame with layer names and the corresponding representation targets
 richness_df <- data.frame(rich_group, target_3 = richness_targets)
