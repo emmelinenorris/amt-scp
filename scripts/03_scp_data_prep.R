@@ -594,6 +594,8 @@ richness_rasters <- list()
 for (i in 1:length(iucn_threat$scientificName)) {
   curr_vect <- vect(iucn_threat[i, "geometry"]) 
   curr_rast <- rasterize(curr_vect, r_amt) 
+  # Associate species name with corresponding raster 
+  names(curr_rast) <- paste(iucn_threat$scientificName[i])
   values(curr_rast)[which(values(curr_rast) > 0)] <- 1
   values(curr_rast)[which(is.na(values(curr_rast)))] <- 0
   richness_rasters[[i]] <- curr_rast 
