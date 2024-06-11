@@ -448,10 +448,9 @@ ggplot(amt_grid_v4, aes(x = category, y = cost, fill = category)) +
 
 # Adjust cost proxy to decrease the cost proxy for PUs on native title land or inalienable Indigenous freehold. This factor should be less than 1 to reduce the cost
 # Multiple native title/Indigenous freehold land by 0.3 to remove overlap in interquartile range of cost proxy values between land that is and is not native title
-ntd_adjust <- 0.3
 amt_grid_v4$cost_adjusted <- ifelse(amt_grid_v4$declare_ipa == 1 | amt_grid_v4$category == "Freehold - Indigenous",
-                                     amt_grid_v4$cost*ntd_adjust, 
-                                     amt_grid_v4$cost)
+                                     amt_grid_v4$cost*0.5, 
+                                     amt_grid_v4$cost*1)
 hist(amt_grid_v4$cost_adjusted)
 
 # Square root transformation to remove skew
