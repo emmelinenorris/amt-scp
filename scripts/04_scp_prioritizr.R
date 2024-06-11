@@ -82,7 +82,7 @@ eval_n_summary(cp1.1, s1.1x)[[2]] - pa_pus # TOTAL PUs = 310 vs 5904 with bounda
 pa_cost <- sum(pu_dat$cost[which(pu_dat$status == 1)], na.rm = T) # cost of area in PAN = 721.91
 
 # Calculate total cost of solution
-eval_cost_summary(cp1.1, s1.1x)[[2]] - pa_cost # TOTAL COST = 48.98
+eval_cost_summary(cp1.1, s1.1x)[[2]] - pa_cost # TOTAL COST = 48.97586
 
 # Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
 tcs1.1 <- eval_target_coverage_summary(cp1.1, s1.1x)
@@ -94,16 +94,21 @@ sum(st_area(s1.1[which(s1.1x$solution_1 == 1),])) # Approx. 499,359 km^2
 # Calculate the exposed boundary length (perimeter) associated with a solution
 eval_boundary_summary(cp1.1, s1.1x) # Boundary length = 28,788 km
 
-# Calculate the number and proportion of selected PUs in each land use category
+# Calculate the number of selected PUs in each land use category
 s1.1_df <- s1.1 %>%
   filter(solution_1 == 1) %>%
   group_by(category) %>%
   summarise(Count = n()) %>%
-  mutate(
-    Proportion = Count / sum(Count),
-    status = case_when(
-      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
-      TRUE ~ "Not Protected"))
+  mutate(status = case_when(
+    category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+    TRUE ~ "Not Protected"))
+
+# Calculate the proportion of PUs in each land use category (excluding protected areas, which are 'locked in')
+s1.1_df <- s1.1_df %>%
+  mutate(prop_selected = ifelse(
+    category %in% c("Protected Area", "Indigenous Protected Area"), 
+    NA, 
+    Count / sum(Count[!(category %in% c("Protected Area", "Indigenous Protected Area"))])))
 
 # Convert 'land_type' column to a factor with levels in the specific order
 s1.1_df$category <- factor(s1.1_df$category, levels = c("Protected Area", 
@@ -194,28 +199,33 @@ s1.2x <- s1.2[, "solution_1", drop = FALSE]
 eval_n_summary(cp1.2, s1.2x)[[2]] - pa_pus # TOTAL PUs = 848 
 
 # Calculate total cost of solution
-eval_cost_summary(cp1.2, s1.2x)[[2]] - pa_cost # TOTAL COST = 138.10
+eval_cost_summary(cp1.2, s1.2x)[[2]] - pa_cost # TOTAL COST = 138.1047
 
 # Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
 tcs1.2 <- eval_target_coverage_summary(cp1.2, s1.2x)
 # 100% of targets for high positive latent risk species met or exceeded
 
 # Calculate total area of PA network (including existing PAs)
-sum(st_area(s1.2[which(s1.2x$solution_1 == 1),])) # Approx. 578,983 km^2
+sum(st_area(s1.2[which(s1.2x$solution_1 == 1),]))/1000000 # Approx. 578,983.4 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp1.2, s1.2x) # Boundary length = 32,133 km
+eval_boundary_summary(cp1.2, s1.2x) # Boundary length = 32,133.88 km
 
-# Calculate the number and proportion of selected PUs in each land use category
+# Calculate the number of selected PUs in each land use category
 s1.2_df <- s1.2 %>%
   filter(solution_1 == 1) %>%
   group_by(category) %>%
   summarise(Count = n()) %>%
-  mutate(
-    Proportion = Count / sum(Count),
-    status = case_when(
-      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
-      TRUE ~ "Not Protected"))
+  mutate(status = case_when(
+    category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+    TRUE ~ "Not Protected"))
+
+# Calculate the proportion of PUs in each land use category (excluding protected areas, which are 'locked in')
+s1.2_df <- s1.2_df %>%
+  mutate(prop_selected = ifelse(
+    category %in% c("Protected Area", "Indigenous Protected Area"), 
+    NA, 
+    Count / sum(Count[!(category %in% c("Protected Area", "Indigenous Protected Area"))])))
 
 # Convert 'land_type' column to a factor with levels in the specific order
 s1.2_df$category <- factor(s1.2_df$category, levels = c("Protected Area", 
@@ -304,28 +314,33 @@ s1.3x <- s1.3[, "solution_1", drop = FALSE]
 eval_n_summary(cp1.3, s1.3x)[[2]] - pa_pus # TOTAL PUs = 322 
 
 # Calculate total cost of solution
-eval_cost_summary(cp1.3, s1.3x)[[2]] - pa_cost # TOTAL COST = 80
+eval_cost_summary(cp1.3, s1.3x)[[2]] - pa_cost # TOTAL COST = 77.99684
 
 # Calculate how well feature representation targets are met by a solution
 tcs1.3 <- eval_target_coverage_summary(cp1.3, s1.3x)
 # Species richness target exceeded
 
 # Calculate total area of PA network (including existing PAs)
-sum(st_area(s1.3[which(s1.3x$solution_1 == 1),])) # Approx. 501,056 km^2
+sum(st_area(s1.3[which(s1.3x$solution_1 == 1),]))/1000000 # Approx. 501,056.3 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp1.3, s1.3x) # Boundary length = 28,366 km
+eval_boundary_summary(cp1.3, s1.3x) # Boundary length = 28,366.12 km
 
-# Calculate the number and proportion of selected PUs in each land use category
+# Calculate the number of selected PUs in each land use category
 s1.3_df <- s1.3 %>%
   filter(solution_1 == 1) %>%
   group_by(category) %>%
   summarise(Count = n()) %>%
-  mutate(
-    Proportion = Count / sum(Count),
-    status = case_when(
-      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
-      TRUE ~ "Not Protected"))
+  mutate(status = case_when(
+    category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+    TRUE ~ "Not Protected"))
+
+# Calculate the proportion of PUs in each land use category (excluding protected areas, which are 'locked in')
+s1.3_df <- s1.3_df %>%
+  mutate(prop_selected = ifelse(
+    category %in% c("Protected Area", "Indigenous Protected Area"), 
+    NA, 
+    Count / sum(Count[!(category %in% c("Protected Area", "Indigenous Protected Area"))])))
 
 # Convert 'land_type' column to a factor with levels in the specific order
 s1.3_df$category <- factor(s1.3_df$category, levels = c("Protected Area", 
@@ -413,31 +428,36 @@ s2.1 <- st_as_sf(s2.1) # Convert to sf
 s2.1x <- s2.1[, "solution_1", drop = FALSE]
 
 # Calculate number of selected planning units additional to existing PA network
-eval_n_summary(cp2.1, s2.1x)[[2]] - pa_pus # TOTAL PUs = 309
+eval_n_summary(cp2.1, s2.1x)[[2]] - pa_pus # TOTAL PUs = 313
 
 # Calculate total cost of solution
-eval_cost_summary(cp2.1, s2.1x)[[2]] - pa_cost # TOTAL COST = 888.91
+eval_cost_summary(cp2.1, s2.1x)[[2]] - pa_cost # TOTAL COST = 28.31674
 
 # Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
 tcs2.1 <- eval_target_coverage_summary(cp2.1, s2.1x)
 # 100% of targets for threatened species met or exceeded
 
 # Calculate total area of PA network (including existing PAs)
-sum(st_area(s2.1[which(s2.1x$solution_1 == 1),])) # Approx. 498,949 km^2
+sum(st_area(s2.1[which(s2.1x$solution_1 == 1),]))/1000000 # Approx. 499,479 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp2.1, s2.1x) # Boundary length = 30,138 km
+eval_boundary_summary(cp2.1, s2.1x) # Boundary length = 30,249 km
 
-# Calculate the number and proportion of selected PUs in each land use category
+# Calculate the number of selected PUs in each land use category
 s2.1_df <- s2.1 %>%
   filter(solution_1 == 1) %>%
   group_by(category) %>%
   summarise(Count = n()) %>%
-  mutate(
-    Proportion = Count / sum(Count),
-    status = case_when(
-      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
-      TRUE ~ "Not Protected"))
+  mutate(status = case_when(
+    category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+    TRUE ~ "Not Protected"))
+
+# Calculate the proportion of PUs in each land use category (excluding protected areas, which are 'locked in')
+s2.1_df <- s2.1_df %>%
+  mutate(prop_selected = ifelse(
+    category %in% c("Protected Area", "Indigenous Protected Area"), 
+    NA, 
+    Count / sum(Count[!(category %in% c("Protected Area", "Indigenous Protected Area"))])))
 
 # Convert 'land_type' column to a factor with levels in the specific order
 s2.1_df$category <- factor(s2.1_df$category, levels = c("Protected Area", 
@@ -525,31 +545,36 @@ s2.2 <- st_as_sf(s2.2) # Convert to sf
 s2.2x <- s2.2[, "solution_1", drop = FALSE]
 
 # Calculate number of selected planning units additional to existing PA network
-eval_n_summary(cp2.2, s2.2x)[[2]] - pa_pus # TOTAL PUs = 838
+eval_n_summary(cp2.2, s2.2x)[[2]] - pa_pus # TOTAL PUs = 850
 
 # Calculate total cost of solution
-eval_cost_summary(cp2.2, s2.2x)[[2]] - pa_cost # TOTAL COST = 1024.06
+eval_cost_summary(cp2.2, s2.2x)[[2]] - pa_cost # TOTAL COST = 83.24743
 
 # Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
 tcs2.2 <- eval_target_coverage_summary(cp2.2, s2.2x)
 # 100% of targets for threatened species met or exceeded
 
 # Calculate total area of PA network (including existing PAs)
-sum(st_area(s2.2[which(s2.2x$solution_1 == 1),])) # Approx. 576,866 km^2
+sum(st_area(s2.2[which(s2.2x$solution_1 == 1),]))/1000000 # Approx. 578,661.7 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp2.2, s2.2x) # Boundary length = 30,526 km
+eval_boundary_summary(cp2.2, s2.2x) # Boundary length = 30,248.46 km
 
-# Calculate the number and proportion of selected PUs in each land use category
+# Calculate the number of selected PUs in each land use category
 s2.2_df <- s2.2 %>%
   filter(solution_1 == 1) %>%
   group_by(category) %>%
   summarise(Count = n()) %>%
-  mutate(
-    Proportion = Count / sum(Count),
-    status = case_when(
-      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
-      TRUE ~ "Not Protected"))
+  mutate(status = case_when(
+    category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+    TRUE ~ "Not Protected"))
+
+# Calculate the proportion of PUs in each land use category (excluding protected areas, which are 'locked in')
+s2.2_df <- s2.2_df %>%
+  mutate(prop_selected = ifelse(
+    category %in% c("Protected Area", "Indigenous Protected Area"), 
+    NA, 
+    Count / sum(Count[!(category %in% c("Protected Area", "Indigenous Protected Area"))])))
 
 # Convert 'land_type' column to a factor with levels in the specific order
 s2.2_df$category <- factor(s2.2_df$category, levels = c("Protected Area", 
@@ -635,31 +660,36 @@ s2.3 <- st_as_sf(s2.3) # Convert to sf
 s2.3x <- s2.3[, "solution_1", drop = FALSE]
 
 # Calculate number of selected planning units additional to existing PA network
-eval_n_summary(cp2.3, s2.3x)[[2]] - pa_pus # TOTAL PUs = 327 
+eval_n_summary(cp2.3, s2.3x)[[2]] - pa_pus # TOTAL PUs = 332
 
 # Calculate total cost of solution
-eval_cost_summary(cp2.3, s2.3x)[[2]] - pa_cost # TOTAL COST = 918.9
+eval_cost_summary(cp2.3, s2.3x)[[2]] - pa_cost # TOTAL COST = 47.23799
 
 # Calculate how well feature representation targets are met by a solution
 tcs2.3 <- eval_target_coverage_summary(cp2.3, s2.3x)
 # Species richness target exceeded
 
 # Calculate total area of PA network (including existing PAs)
-sum(st_area(s2.3[which(s2.3x$solution_1 == 1),])) # Approx. 501,378 km^2
+sum(st_area(s2.3[which(s2.3x$solution_1 == 1),]))/1000000 # Approx. 501,929.5 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp2.3, s2.3x) # Boundary length = 28,405 km
+eval_boundary_summary(cp2.3, s2.3x) # Boundary length = 28,383.649 km
 
-# Calculate the number and proportion of selected PUs in each land use category
+# Calculate the number of selected PUs in each land use category
 s2.3_df <- s2.3 %>%
   filter(solution_1 == 1) %>%
   group_by(category) %>%
   summarise(Count = n()) %>%
-  mutate(
-    Proportion = Count / sum(Count),
-    status = case_when(
-      category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
-      TRUE ~ "Not Protected"))
+  mutate(status = case_when(
+    category %in% c("Protected Area", "Indigenous Protected Area") ~ "Protected",
+    TRUE ~ "Not Protected"))
+
+# Calculate the proportion of PUs in each land use category (excluding protected areas, which are 'locked in')
+s2.3_df <- s2.3_df %>%
+  mutate(prop_selected = ifelse(
+    category %in% c("Protected Area", "Indigenous Protected Area"), 
+    NA, 
+    Count / sum(Count[!(category %in% c("Protected Area", "Indigenous Protected Area"))])))
 
 # Convert 'land_type' column to a factor with levels in the specific order
 s2.3_df$category <- factor(s2.3_df$category, levels = c("Protected Area", 
@@ -732,10 +762,4 @@ ggsave("04_sp2_3.tiff", units="cm", width=30, height=15, dpi=300, compression = 
 
 
 
-# Boxplot of range of cost values for each land category
-ggplot(pu_dat, aes(x = category, y = cost_adjusted, fill = category)) +
-  geom_boxplot() +
-  labs(x = "Land Category", y = "Cost Proxy Value") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme(legend.position = "none")
+
