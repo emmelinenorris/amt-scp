@@ -24,6 +24,7 @@ library(highs)
 library(sf)
 library(terra)
 library(tidyverse)
+library(viridis)
 
 
 #### LOAD DATA REQUIRED FOR PRIORITIZR AND PLOTS ####
@@ -760,6 +761,41 @@ ggplot(data = s2.3_df) +
 ggsave("04_sp2_3.tiff", units="cm", width=30, height=15, dpi=300, compression = 'lzw', path = "results/fig/scp", bg  = 'white')
 
 
+#### CALCULATE PLANNING UNIT SELECTION FREQUENCY ACROSS ALL SCENARIOS ####
 
+# Create a table containing the PU selections (binary) for each SCP scenario
+sel_freq <- tibble(
+  s1.1 = s1.1$solution_1,
+  s1.2 = s1.2$solution_1,
+  s1.3 = s1.3$solution_1,
+  s2.1 = s2.1$solution_1,
+  s2.2 = s2.2$solution_1,
+  s2.3 = s2.3$solution_1) %>%
+  mutate(sum_values = rowSums(across(everything()))) %>%
+  bind_cols(pu_dat) %>%
+  filter(status != 1) %>%
+  st_as_sf()
+
+# Create sf data frame containing only PUs in PA network
+pa_network <- pu_dat %>%
+  filter(status == 1) %>%
+  st_as_sf()
+
+# Plot selection frequencies
+ggplot(data = sel_freq) +
+  geom_sf(mapping = aes(fill = factor(sum_values)), color = "transparent") +
+  scale_fill_viridis_d(option = "viridis", 
+                       direction = 1, 
+                       name = "Selection frequency", 
+                       breaks = 0:5, 
+                       labels = as.character(0:5),
+                       begin = 0.15,
+                       end = 0.95) +
+  geom_sf(data = pa_network, fill = 'grey80', color = "transparent") +
+  geom_sf(data = amt, fill = "transparent", color = "black", size = 0.8) +
+  geom_sf(data = wt, fill = "black", color = "black", size = 0.4) +
+  theme_minimal()
+
+ggsave("04_sel_freq.tiff", units="cm", width=30, height=15, dpi=300, compression = 'lzw', path = "results/fig/scp", bg  = 'white')
 
 
