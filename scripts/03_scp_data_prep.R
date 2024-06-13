@@ -683,41 +683,49 @@ ggplot() +
   scale_fill_viridis_c() +
   theme_minimal()
 
-# Intersect most diverse areas with IUCN species distributions
+# Initialize a list to store the resulting rasters
+high_diversity_rasters <- list()
+# Loop through each species in the iucn_threat data frame
+for (i in 1:nrow(iucn_threat)) {
+  # Get the current IUCN species distribution as a SpatVector
+  curr_shape <- iucn_threat[i, "geometry"]
+  # Intersect the current species distribution with the richness polygon
+  curr_intersect <- st_intersection(curr_shape, richness_sf)
+  # Convert to vector
+  curr_vect <- vect(curr_intersect)
+  # Rasterize the intersection
+  curr_rast <- rasterize(curr_intersect, r_amt)
+  # Set the values: 1 where there is an intersection, 0 otherwise
+  values(curr_rast)[which(values(curr_rast) > 0)] <- 1
+  values(curr_rast)[which(is.na(values(curr_rast)))] <- 0
+  # Associate species name with the corresponding raster
+  names(curr_rast) <- paste(iucn_threat$scientificName[i])
+  # Store the resulting raster in the list
+  high_diversity_rasters[[i]] <- curr_rast
+}
+# Create raster stack
+high_diversity_species <- rast(high_diversity_rasters)
+
+# FInd species names of 127 species in highest mammal diversity areas
 richness_species <- iucn_threat %>%
   st_intersection(richness_sf)
 highDiversitySpecies <- richness_species$scientificName
 
-# Create new raster stack for 127 species that inhabit areas of highest mammal diversity (41-62 species)
-# This time rasters are cropped to 'species rich' areas to force prioritizr algorithm to only consider these areas
-crop_richness_rasters <- list()
-for (i in 1:length(richness_species$scientificName)) {
-  curr_vect <- vect(richness_species[i, "geometry"]) 
-  curr_rast <- rasterize(curr_vect, r_amt) 
-  # Associate species name with corresponding raster 
-  names(curr_rast) <- paste(richness_species$scientificName[i])
-  values(curr_rast)[which(values(curr_rast) > 0)] <- 1
-  values(curr_rast)[which(is.na(values(curr_rast)))] <- 0
-  crop_richness_rasters[[i]] <- curr_rast 
-}
-
-# Combine the list of rasters into a single raster stack
-species_richness <- rast(crop_richness_rasters)
 
 # Calculate the net current threat status, excluding NA values
-sum_high_richness <- sum(species_richness, na.rm = TRUE) %>%
+sum_high_richness <- sum(high_diversity_species, na.rm = TRUE) %>%
   mask(r_amt)
 plot(sum_high_richness)
 
 # Export the raster as a TIFF file
-writeRaster(species_richness, filename="data/output-data/tif/03_high_diversity_species.tif", overwrite=TRUE)
+writeRaster(high_diversity_species, filename="data/output-data/tif/03_high_diversity_species.tif", overwrite=TRUE)
 
 
 # TARGET 3: HIGHEST MAMMAL DIVERSITY AREAS
 # Assign 127 mammals found in areas of highest mammal diversity a representation target of 90%, and zero for all others
 spec_dat <- spec_dat %>%
-  mutate(speciesRichness = ifelse(scientificName %in% highDiversitySpecies, 1, 0)) %>%
-  mutate(target_3 = ifelse(speciesRichness == 1, 0.9, 0))
+  mutate(highDiversitySpecies = ifelse(scientificName %in% highDiversitySpecies, 1, 0)) %>%
+  mutate(target_3 = ifelse(highDiversitySpecies == 1, 0.9, 0))
 
 # Write spec_dat data frame to csv
 write_csv(spec_dat, "data/output-data/tbl/03_spec_dat.csv", append = F)
