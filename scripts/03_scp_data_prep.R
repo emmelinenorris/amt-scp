@@ -26,7 +26,7 @@ r_amt <- rast("data/output-data/tif/01_r_amt.tif")
 # Extract coordinates of AMT polygon bounding box
 ext <- st_as_sfc(st_bbox(amt))
 # Sample 6000 hexagons across the extent of the AMT 
-centre_pts <- st_sample(ext, size = 6000, type = "hexagonal") %>%
+centre_pts <- st_sample(ext, size = 6050, type = "hexagonal") %>%
   st_transform(crs = st_crs(3577)) %>%
   st_as_sf() 
 
@@ -52,7 +52,7 @@ amt_grid <- st_intersection(hex_grid, amt) %>%
   mutate(area = st_area(.)) %>% # Calculate area of each hex unit
   dplyr::select(!2) %>% # remove Fid column
   st_collection_extract("POLYGON") # Extract polygon features from GeometryCollection
-# 9909 hex units; 166 km^2 area for entire units
+# 9986 hexagonal planning units; 147.3 km^2 area for whole units
 
 # Check size of hex units is spatially constant
 # Only hex units on AMT boundary should have a smaller area
@@ -80,6 +80,8 @@ capad <- read_sf("data/input-data/capad/CAPAD2022_terrestrial.shp") %>%
 # Intersect CAPAD protected area polygons with the AMT
 capad_amt <- st_intersection(capad, amt) %>%
   st_collection_extract("POLYGON")
+
+st_write(capad_amt, "data/output-data/shp/03_capad_amt.shp", append = F)
 
 # Plot by protected area type
 ggplot() +
@@ -536,8 +538,6 @@ for (i in 1:length(iucn_amt$scientificName)) {
 spec_dat <- spec_dat %>%
   mutate(prop = pmin(area_amt/area_total, 1))
 
-# Write to csv
-write_csv(spec_dat, "data/output-data/tbl/03_spec_dat.csv", append = F)
 
 #### CALCULATE SPECIES REPRESENTATION TARGETS ####
 
@@ -585,6 +585,7 @@ spec_dat <- spec_dat %>%
     target_2 = if_else(target_2 > 0.9, 0.9, target_2),
     target_2 = replace_na(target_2, 0))
 
+
 #### CALCULATE SPECIES RICHNESS TARGET ####
 
 # Map average and net species richness across the AMT (only including final subset of 141 AMT mammals)
@@ -608,7 +609,7 @@ sum_richness <- sum(richness_stack, na.rm = TRUE) %>%
 plot(sum_richness)
 
 # Extract species richness for PUs
-pu_richness <- extract(sum_richness, amt_grid_v4, method = 'bilinear', fun = modal, na.rm = T)
+pu_richness <- terra::extract(sum_richness, amt_grid_v4, method = 'bilinear', fun = modal, na.rm = T)
 
 # Merge with existing PU data in new data frame
 amt_grid_v5 <- cbind(amt_grid_v4, pu_richness)
@@ -628,7 +629,7 @@ ggplot() +
 ## TARGET 3: prioritise PUs in the top 90th percentile of species richness (41-62 species)
 # Calculate quantiles for species richness values across PUs 
 quantile(pu_richness[,2], probs = 0.9, na.rm = T)
-# 90th percentile = 41 species (i.e., only 10% of PUs have greater than 41 species)
+# 90th percentile = 41 species (i.e., only 10% of PUs have 41 species or more)
 
 # Define new breaks for species richness
 richness_breaks <- c(0, 40, 62)
@@ -669,6 +670,58 @@ writeRaster(richness_lyr_stack, filename="data/output-data/tif/03_richness_stack
 richness_df <- data.frame(rich_group, target_3 = richness_targets)
 # Write to csv
 write_csv(richness_df, "data/output-data/tbl/03_richness_df.csv", append = F)
+
+
+# Determine which species are represented in the top 90th percentile of mammal diversity in the AMT
+# Convert raster to polygons
+richness_sf <- as.polygons(richness_lyr_stack[[2]]) %>%
+  st_as_sf() %>%
+  filter(rich_41_62 == 1)
+
+ggplot() +
+  geom_sf(data = richness_sf, fill = 'blue') +
+  scale_fill_viridis_c() +
+  theme_minimal()
+
+# Intersect most diverse areas with IUCN species distributions
+richness_species <- iucn_threat %>%
+  st_intersection(richness_sf)
+highDiversitySpecies <- richness_species$scientificName
+
+# Create new raster stack for 127 species that inhabit areas of highest mammal diversity (41-62 species)
+# This time rasters are cropped to 'species rich' areas to force prioritizr algorithm to only consider these areas
+crop_richness_rasters <- list()
+for (i in 1:length(richness_species$scientificName)) {
+  curr_vect <- vect(richness_species[i, "geometry"]) 
+  curr_rast <- rasterize(curr_vect, r_amt) 
+  # Associate species name with corresponding raster 
+  names(curr_rast) <- paste(richness_species$scientificName[i])
+  values(curr_rast)[which(values(curr_rast) > 0)] <- 1
+  values(curr_rast)[which(is.na(values(curr_rast)))] <- 0
+  crop_richness_rasters[[i]] <- curr_rast 
+}
+
+# Combine the list of rasters into a single raster stack
+species_richness <- rast(crop_richness_rasters)
+
+# Calculate the net current threat status, excluding NA values
+sum_high_richness <- sum(species_richness, na.rm = TRUE) %>%
+  mask(r_amt)
+plot(sum_high_richness)
+
+# Export the raster as a TIFF file
+writeRaster(species_richness, filename="data/output-data/tif/03_high_diversity_species.tif", overwrite=TRUE)
+
+
+# TARGET 3: HIGHEST MAMMAL DIVERSITY AREAS
+# Assign 127 mammals found in areas of highest mammal diversity a representation target of 90%, and zero for all others
+spec_dat <- spec_dat %>%
+  mutate(speciesRichness = ifelse(scientificName %in% highDiversitySpecies, 1, 0)) %>%
+  mutate(target_3 = ifelse(speciesRichness == 1, 0.9, 0))
+
+# Write spec_dat data frame to csv
+write_csv(spec_dat, "data/output-data/tbl/03_spec_dat.csv", append = F)
+
 
 
 
