@@ -223,17 +223,21 @@ ilua_df$category <- ifelse(grepl("pastoral", ilua_df$type, ignore.case = TRUE),
 amt_grid$capad <- terra::extract(pa_ras, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
 amt_grid$nt <- terra::extract(ntd_ras, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
 amt_grid$ilua <- terra::extract(ilua_ras, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
-amt_grid$pastoral <- terra::extract(tenure, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
+amt_grid$pastoral <- terra::extract(tenure_pastoral, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
+
 # Check output looks correct
 ggplot() + 
-  geom_sf(data = amt_grid, aes(fill = capad))
+  geom_sf(data = amt_grid, aes(fill = pastoral))
 
 # Create a binary variable indicating if a PU is primarily protected (1) or not (0)
 amt_grid <- amt_grid %>%
-  mutate(status = ifelse(!is.na(capad) & capad > 0, 1, 0))
+  mutate(status = ifelse(!is.na(capad) & capad > 0, 1, 0)) %>%
+  mutate(nt = ifelse(!is.na(nt) & nt > 0, 1, 0)) %>%
+  mutate(ilua = ifelse(!is.na(ilua) & ilua > 0, 1, 0)) %>%
+  mutate(pastoral = ifelse(!is.na(pastoral) & pastoral > 0, 1, 0)) 
 # Check output looks correct
 ggplot() + 
-  geom_sf(data = amt_grid, aes(fill = status))
+  geom_sf(data = amt_grid, aes(fill = pastoral))
 
 # Generate logical (T/F) variable to lock in protected areas since they are already in the reserve system
 amt_grid$locked_in <- as.logical(amt_grid$status)
@@ -304,7 +308,7 @@ pu_landcat <- pu_landcat %>%
 # Bind columns 6 to 8 of pu_landcat to amt_grid
 amt_grid_v2 <- amt_grid %>%
   bind_cols(pu_landcat %>% dplyr::select(6:8)) %>%
-  filter(if_any(11:13, ~!is.na(.))) # Remove 21 rows with no land classification
+  filter(if_any(14:16, ~!is.na(.))) # Remove 21 rows with no land classification
 
 # Check it looks correct
 ggplot() + 
@@ -339,6 +343,23 @@ ggplot() +
 # Create a new binary column indicating whether the PU can be voluntarily declared as an IPA (i.e., is native title land) and is not already protected
 amt_grid_v2 <- amt_grid_v2 %>%
   mutate(declare_ipa = if_else(main_id == 300 | main_id == 400, 1, 0))
+
+#### CALCULATE PROPORTION OF AMT LAND IN EACH CATEGORY ####
+
+# Calculate the approximate proportion AMT land under pastoral use
+prop_pastoral <- sum(amt_grid_v2$pastoral == 1) / nrow(amt_grid_v2)
+
+# Calculate the approximate proportion AMT land under pastoral use
+prop_protected <- sum(amt_grid_v2$category == "Protected Area") / nrow(amt_grid_v2)
+
+# Calculate the approximate proportion AMT land under pastoral use
+prop_ipa <- sum(amt_grid_v2$category == "Indigenous Protected Area") / nrow(amt_grid_v2)
+
+# Calculate the approximate proportion AMT land under pastoral use
+prop_nt <- sum(amt_grid_v2$nt == 1) / nrow(amt_grid_v2)
+
+# Calculate the approximate proportion AMT land under pastoral use
+prop_ilua <- sum(amt_grid_v2$ilua == 1) / nrow(amt_grid_v2)
 
 #### MAP MEDIAN EMPLOYEE INCOME FOR LGAs to PU LAYER ####
 
@@ -485,10 +506,13 @@ ggplot(amt_grid_v4, aes(x = category, y = cost_adjusted, fill = category)) +
 ggplot() +
   geom_sf(data = amt_grid_v4, aes(fill = cost_adjusted), color = NA) +
   scale_fill_viridis_c() +
-  geom_sf(data = capad_amt, fill = "transparent", color = "red") + # to plot PA boundaries
+  #geom_sf(data = capad_amt, fill = "transparent", color = "red") + # to plot PA boundaries
   geom_sf(data = amt, fill = "transparent", color = "gray20") +
   theme_minimal() +
   labs(fill = "Cost proxy values")
+
+# For equal cost efficienc analysis give each PU a cost proxy value of 1
+amt_grid_v4$cost_equal <- 1
 
 #### CREATE SPEC_DAT DATA FRAME ####
 
@@ -599,7 +623,7 @@ spec_dat <- spec_dat %>%
     target_2 = replace_na(target_2, 0))
 
 
-#### CALCULATE SPECIES RICHNESS TARGET ####
+#### VISUALISE SPECIES RICHNESS IN AMT ####
 
 # Map average and net species richness across the AMT (only including final subset of 141 AMT mammals)
 # Initialize an empty list to store the raster layers
@@ -626,7 +650,7 @@ pu_richness <- terra::extract(sum_richness, amt_grid_v4, method = 'bilinear', fu
 
 # Merge with existing PU data in new data frame
 amt_grid_v5 <- cbind(amt_grid_v4, pu_richness)
-colnames(amt_grid_v5)[18] <- 'spec_richness'
+colnames(amt_grid_v5)[23] <- 'spec_richness'
 
 # Write final PU grid to shapefile
 st_write(amt_grid_v5, "data/output-data/shp/03_amt_pu_grid.shp", append = F)
@@ -638,107 +662,6 @@ ggplot() +
   theme_minimal() +
   labs(fill = "Species richness")
 
-
-## TARGET 3: prioritise PUs in the top 90th percentile of species richness (41-62 species)
-# Calculate quantiles for species richness values across PUs 
-quantile(pu_richness[,2], probs = 0.9, na.rm = T)
-# 90th percentile = 41 species (i.e., only 10% of PUs have 41 species or more)
-
-# Define new breaks for species richness
-richness_breaks <- c(0, 40, 62)
-
-# Adjusted representation targets based on the two groups
-# I.e., if PU has < 36 species, do not prioritise. If > 41 species, must be included in optimal reserve network
-richness_targets <- c(0, 0.9)
-
-# Initialize an empty list to store the individual raster layers for the two groups
-richness_layers <- list()
-# Loop through the breaks to create new raster layers
-for (i in 1:(length(richness_breaks) - 1)) {
-  lower_bound <- richness_breaks[i]
-  upper_bound <- richness_breaks[i + 1]
-  # Create a new raster layer for each range, setting cells within the range to 1 and others to 0
-  curr_layer <- app(sum_richness, fun = function(x) {
-    ifelse(x >= lower_bound & x < upper_bound, 1, 0)
-  })
-  # Add the current raster layer to the list
-  richness_layers[[i]] <- curr_layer
-}
-
-# Stack the raster layers into a single raster stack
-richness_lyr_stack <- rast(richness_layers)
-# Visualise areas in each richness category
-plot(richness_lyr_stack[[1]]) # low
-plot(richness_lyr_stack[[2]]) # high
-
-# Adjust the layer names to reflect the new groups
-rich_group <- c("rich_0_40", "rich_41_62")
-
-# Assign the new names to the layers in the stack
-names(richness_lyr_stack) <- rich_group
-# Export the raster as a TIFF file
-writeRaster(richness_lyr_stack, filename="data/output-data/tif/03_richness_stack.tif", overwrite=TRUE)
-
-# Create a data frame with layer names and the corresponding representation targets
-richness_df <- data.frame(rich_group, target_3 = richness_targets)
-# Write to csv
-write_csv(richness_df, "data/output-data/tbl/03_richness_df.csv", append = F)
-
-
-# Determine which species are represented in the top 90th percentile of mammal diversity in the AMT
-# Convert raster to polygons
-richness_sf <- as.polygons(richness_lyr_stack[[2]]) %>%
-  st_as_sf() %>%
-  filter(rich_41_62 == 1)
-
-ggplot() +
-  geom_sf(data = richness_sf, fill = 'blue') +
-  scale_fill_viridis_c() +
-  theme_minimal()
-
-# Initialize a list to store the resulting rasters
-high_diversity_rasters <- list()
-# Loop through each species in the iucn_threat data frame
-for (i in 1:nrow(iucn_threat)) {
-  # Get the current IUCN species distribution as a SpatVector
-  curr_shape <- iucn_threat[i, "geometry"]
-  # Intersect the current species distribution with the richness polygon
-  curr_intersect <- st_intersection(curr_shape, richness_sf)
-  # Convert to vector
-  curr_vect <- vect(curr_intersect)
-  # Rasterize the intersection
-  curr_rast <- rasterize(curr_intersect, r_amt)
-  # Set the values: 1 where there is an intersection, 0 otherwise
-  values(curr_rast)[which(values(curr_rast) > 0)] <- 1
-  values(curr_rast)[which(is.na(values(curr_rast)))] <- 0
-  # Associate species name with the corresponding raster
-  names(curr_rast) <- paste(iucn_threat$scientificName[i])
-  # Store the resulting raster in the list
-  high_diversity_rasters[[i]] <- curr_rast
-}
-# Create raster stack
-high_diversity_species <- rast(high_diversity_rasters)
-
-# FInd species names of 127 species in highest mammal diversity areas
-richness_species <- iucn_threat %>%
-  st_intersection(richness_sf)
-highDiversitySpecies <- richness_species$scientificName
-
-
-# Calculate the net current threat status, excluding NA values
-sum_high_richness <- sum(high_diversity_species, na.rm = TRUE) %>%
-  mask(r_amt)
-plot(sum_high_richness)
-
-# Export the raster as a TIFF file
-writeRaster(high_diversity_species, filename="data/output-data/tif/03_high_diversity_species.tif", overwrite=TRUE)
-
-
-# TARGET 3: HIGHEST MAMMAL DIVERSITY AREAS
-# Assign 127 mammals found in areas of highest mammal diversity a representation target of 90%, and zero for all others
-spec_dat <- spec_dat %>%
-  mutate(highDiversitySpecies = ifelse(scientificName %in% highDiversitySpecies, 1, 0)) %>%
-  mutate(target_3 = ifelse(highDiversitySpecies == 1, 0.9, 0))
 
 # Write spec_dat data frame to csv
 write_csv(spec_dat, "data/output-data/tbl/03_spec_dat.csv", append = F)
