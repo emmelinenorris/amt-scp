@@ -29,21 +29,6 @@ st_crs(aust)$proj4string
 ggplot(data = aust) + 
   geom_sf()
 
-# Load state & territory borders
-states <- read_sf("data/input-data/states/STE_2021_AUST_GDA2020.shp") %>%
-  st_transform(crs = st_crs(3577))
-st_crs(states)$proj4string # "+proj=longlat +ellps=GRS80 +no_defs"
-ggplot(data = states) + 
-  geom_sf()
-
-# Extract polygons for QLD, NT and WA (AMT states)
-wa <- states %>%
-  filter(STE_NAME21 == "Western Australia")
-nt <- states %>%
-  filter(STE_NAME21 == "Northern Territory")
-qld <- states %>%
-  filter(STE_NAME21 == "Queensland")
-
 # Define AMT boundaries by IBRA Bioregions
 # Load IBRA bioregions
 ibra <- read_sf("data/input-data/ibra7_regions/ibra7_regions.shp")
