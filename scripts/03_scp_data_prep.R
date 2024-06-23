@@ -25,7 +25,7 @@ r_amt <- rast("data/output-data/tif/01_r_amt.tif")
 # Create hexagonal planning unit grid for the AMT
 # Extract coordinates of AMT polygon bounding box
 ext <- st_as_sfc(st_bbox(amt))
-# Sample 6000 hexagons across the extent of the AMT 
+# Sample 6050 hexagons across the extent of the AMT 
 centre_pts <- st_sample(ext, size = 6050, type = "hexagonal") %>%
   st_transform(crs = st_crs(3577)) %>%
   st_as_sf() 
@@ -47,28 +47,32 @@ hex_grid <- st_make_grid(amt,
 # Create a column of sequential id numbers
 hex_grid$id <- seq.int(nrow(hex_grid))
 
-# Intersect hex_grid with AMT boundary polygon
+# Intersect hex_grid with AMT boundary polygon to remove hexagonal planning units outside AMT
 amt_grid <- st_intersection(hex_grid, amt) %>%
   mutate(area = st_area(.)) %>% # Calculate area of each hex unit
-  dplyr::select(!2) %>% # remove Fid column
+  dplyr::select(!2) %>% # remove FID column
   st_collection_extract("POLYGON") # Extract polygon features from GeometryCollection
-# 9986 hexagonal planning units; 147.3 km^2 area for whole units
+# 10,085 hexagonal planning units; 145.96 km^2 area for whole hexagons
 
-# Check size of hex units is spatially constant
-# Only hex units on AMT boundary should have a smaller area
+# Check size of hex units is spatially constant (only hex units on AMT boundary should have a smaller area)
 ggplot() + 
-  geom_sf(data = amt_grid,
-          aes(fill = units::drop_units(area)))
+  geom_sf(data = amt_grid, aes(fill = units::drop_units(area)))
 
 # Write to shapefile
 st_write(amt_grid, "data/output-data/shp/03_amt_grid.shp", append = F)
 
 # Add columns to the hex data frame for later designating the status of PUs (i.e. locked in or not) and PU cost
-amt_grid$capad <- NA
-amt_grid$status <- NA # whether PU is already in the reserve system
+amt_grid$capad <- NA # whether PU is a protected area
+amt_grid$nt <- NA # whether PU is native title land (in all or part of the determination area)
+amt_grid$ilua <- NA # whether PU is under Indigenous land use agreement
+amt_grid$pastoral <- NA # whether PU is used for grazing cattle
+amt_grid$status <- NA # binary variable indicating whether PU is already in the reserve system
 amt_grid$locked_in <- NA # TRUE/FALSE whether PU is already in the reserve system
-amt_grid$locked_out <- NA # TRUE/FALSE whether PU is to be excluded from the reserve system
-amt_grid$cost <- NA
+amt_grid$locked_out_ob2 <- NA # TRUE/FALSE whether PU is to be excluded from the reserve system (Indigenous land locked out in Objective 2)
+amt_grid$locked_out_ob3 <- NA # TRUE/FALSE whether PU is to be excluded from the reserve system (non-Indigenous land locked out in Objective 3)
+amt_grid$cost <- NA # to enter PU costs based on median employee income and human influence index only
+amt_grid$cost_adjusted <- NA # to enter costs with Indigenous lands adjusted to reflect voluntary declaration to IPA network
+amt_grid$cost_equal <- NA # to enter equal PU cost for cost-efficiency analysis
 
 #### CAPAD PROTECTED AREAS #####
 
@@ -98,7 +102,7 @@ capad_amt$id <- pa_df$id[match(capad_amt$TYPE, pa_df$type)]
 
 # Rasterize maximum PA value to AMT raster grid 
 # Note: only options for 'fun' are min, max, mean, or sum. 
-# Using mean and sum produces meaningless results, so I have opted to use max consistently throughout 
+# Using mean and sum produces numbers that don't match CAPAD IDs, so I have opted to use max consistently throughout 
 pa_vect <- vect(capad_amt)
 pa_ras <- rasterize(pa_vect, r_amt, field = "id", fun = 'max') 
 levels(pa_ras) <- pa_df
@@ -141,6 +145,15 @@ tenure_df$category <- ifelse(
     "Other freehold, term, perpetual lease or Crown purposes"
   )
 )
+
+# Create a binary raster indicating where the "pastoral" levels are located
+pastoral_ids <- tenure_df %>% filter(grepl("pastoral", type, ignore.case = TRUE)) %>% 
+  pull(id)
+pastoral_mask <- classify(tenure, rcl = matrix(c(pastoral_ids, rep(1, length(pastoral_ids))), ncol = 2, byrow = TRUE), others = NA)
+
+# Mask the original tenure raster with the pastoral mask
+tenure_pastoral <- mask(tenure, pastoral_mask)
+plot(tenure_pastoral)
 
 #### NATIVE TITLE LAND ####
 
@@ -208,18 +221,19 @@ ilua_df$category <- ifelse(grepl("pastoral", ilua_df$type, ignore.case = TRUE),
 
 # Calculate the modal CAPAD protected area type for raster values within each planning unit polygon
 amt_grid$capad <- terra::extract(pa_ras, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
+amt_grid$nt <- terra::extract(ntd_ras, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
+amt_grid$ilua <- terra::extract(ilua_ras, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
+amt_grid$pastoral <- terra::extract(tenure, amt_grid, method = "bilinear", fun = modal, na.rm = TRUE)[[2]]
 # Check output looks correct
 ggplot() + 
-  geom_sf(data = amt_grid,
-          aes(fill = capad))
+  geom_sf(data = amt_grid, aes(fill = capad))
 
 # Create a binary variable indicating if a PU is primarily protected (1) or not (0)
 amt_grid <- amt_grid %>%
   mutate(status = ifelse(!is.na(capad) & capad > 0, 1, 0))
 # Check output looks correct
 ggplot() + 
-  geom_sf(data = amt_grid,
-          aes(fill = status))
+  geom_sf(data = amt_grid, aes(fill = status))
 
 # Generate logical (T/F) variable to lock in protected areas since they are already in the reserve system
 amt_grid$locked_in <- as.logical(amt_grid$status)
@@ -290,12 +304,11 @@ pu_landcat <- pu_landcat %>%
 # Bind columns 6 to 8 of pu_landcat to amt_grid
 amt_grid_v2 <- amt_grid %>%
   bind_cols(pu_landcat %>% dplyr::select(6:8)) %>%
-  filter(if_any(8:10, ~ !is.na(.))) # Remove 20 rows with no land classification
+  filter(if_any(11:13, ~!is.na(.))) # Remove 21 rows with no land classification
 
 # Check it looks correct
 ggplot() + 
-  geom_sf(data = amt_grid_v2,
-          aes(fill = category)) 
+  geom_sf(data = amt_grid_v2, aes(fill = category)) 
 
 # Convert 'land_type' column to a factor with levels in the order specified below
 amt_grid_v2$category <- factor(amt_grid_v2$category, levels = c("Protected Area", 
