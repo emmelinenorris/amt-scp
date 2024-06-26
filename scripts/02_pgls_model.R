@@ -392,11 +392,14 @@ l1 <- ggplot(sum_latent_rast_df, aes(x = x, y = y, fill = sum)) +
   scale_fill_viridis_c(option = "D",
                        breaks = seq(-10, 20, by = 10), 
                        labels = seq(-10, 20, by = 10)) +
-  labs(x = "Longitude", y = "Latitude", fill = "Sum") +
-  theme_minimal() +
+  labs(fill = "Sum") +
+  theme_void() +
   coord_fixed(ratio = 1 / cos(mean(sum_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
-  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +  # Format x axis
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) 
+  theme(legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        axis.text = element_blank(),  # Remove axis text
+        axis.ticks = element_blank(),  # Remove axis ticks
+        axis.line = element_blank())
 
 ggsave("02_sum_latent_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
 
@@ -417,11 +420,14 @@ l2 <- ggplot(avg_latent_rast_df, aes(x = x, y = y, fill = mean)) +
   scale_fill_viridis_c(option = "D",
                        breaks = seq(-4, 2, by = 1), 
                        labels = seq(-4, 2, by = 1)) +
-  labs(x = "Longitude", y = "Latitude", fill = "Mean") +
-  theme_minimal() +
+  labs(fill = "Mean") +
+  theme_void() +
   coord_fixed(ratio = 1 / cos(mean(avg_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
-  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +  # Format x axis
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) 
+  theme(legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        axis.text = element_blank(),  # Remove axis text
+        axis.ticks = element_blank(),  # Remove axis ticks
+        axis.line = element_blank()) 
 
 ggsave("02_mean_latent_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
 
@@ -454,11 +460,14 @@ c1 <- ggplot(sum_curr_risk_df, aes(x = x, y = y, fill = sum)) +
   scale_fill_viridis_c(option = "D",
                        breaks = seq(0, 120, by = 20), 
                        labels = seq(0, 120, by = 20)) +
-  labs(x = "Longitude", y = "Latitude", fill = "Sum") +
-  theme_minimal() +
+  labs(fill = "Sum") +
+  theme_void() +
   coord_fixed(ratio = 1 / cos(mean(sum_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
-  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +  # Format x axis
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) 
+  theme(legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        axis.text = element_blank(),  # Remove axis text
+        axis.ticks = element_blank(),  # Remove axis ticks
+        axis.line = element_blank())
 
 ggsave("02_sum_current_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
 
@@ -479,11 +488,14 @@ c2 <- ggplot(avg_curr_risk_df, aes(x = x, y = y, fill = mean)) +
   scale_fill_viridis_c(option = "D", 
                        breaks = seq(0, 6, by = 1), 
                        labels = seq(0, 6, by = 1)) +
-  labs(x = "Longitude", y = "Latitude", fill = "Mean") +
-  theme_minimal() +
-  coord_fixed(ratio = 1 / cos(mean(avg_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
-  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +  # Format x axis
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) 
+  labs(fill = "Mean") +
+  theme_void() +
+  coord_fixed(ratio = 1 / cos(mean(avg_latent_rast_df$y) * pi / 180)) + 
+  theme(legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        axis.text = element_blank(),  # Remove axis text
+        axis.ticks = element_blank(),  # Remove axis ticks
+        axis.line = element_blank())
 
 ggsave("02_mean_current_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
 
