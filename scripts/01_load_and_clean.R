@@ -136,7 +136,7 @@ iucn_amt <- st_intersection(iucn, amt)
 
 # Create new sf data frame for AMT species that includes all range polygons, including outside AMT
 iucn_amt_full <- iucn %>%
-  filter(scientificName %in% iucn_amt$scientificName) %>%
+  filter(scientificName %in% iucn_amt$scientificName) 
 
 # Merge summary data with IUCN species distribution spatial dataset
 iucn_amt_full <- inner_join(iucn_summary, iucn_amt_full, by = 'scientificName')
@@ -147,17 +147,16 @@ iucn_amt_full <- inner_join(iucn_summary, iucn_amt_full, by = 'scientificName')
 iucn_amt_full <- iucn_amt_full %>%
   filter(!(redlistCategory == 'Data Deficient')) %>%
   mutate(ordinalThreat = case_when(
-    redlistCategory == 'Least Concern' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 0,
-    redlistCategory == 'Least Concern' & populationTrend == 'Decreasing' ~ 1,
-    redlistCategory == 'Near Threatened' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 2,
-    redlistCategory == 'Near Threatened' & populationTrend == 'Decreasing' ~ 3,
-    redlistCategory == 'Vulnerable' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 4,
-    redlistCategory == 'Vulnerable' & populationTrend == 'Decreasing' ~ 5,
-    redlistCategory == 'Endangered' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 6,
-    redlistCategory == 'Endangered' & populationTrend == 'Decreasing' ~ 7,
-    redlistCategory == 'Critically Endangered' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 8,
-    redlistCategory == 'Critically Endangered' & populationTrend == 'Decreasing' ~ 9,
-    redlistCategory == 'Extinct' ~ 10,
+    redlistCategory == 'Least Concern' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 1,
+    redlistCategory == 'Least Concern' & populationTrend == 'Decreasing' ~ 2,
+    redlistCategory == 'Near Threatened' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 3,
+    redlistCategory == 'Near Threatened' & populationTrend == 'Decreasing' ~ 4,
+    redlistCategory == 'Vulnerable' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 5,
+    redlistCategory == 'Vulnerable' & populationTrend == 'Decreasing' ~ 6,
+    redlistCategory == 'Endangered' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 7,
+    redlistCategory == 'Endangered' & populationTrend == 'Decreasing' ~ 8,
+    redlistCategory == 'Critically Endangered' & (is.na(populationTrend) | populationTrend %in% c('Stable', 'Increasing', 'Unknown')) ~ 9,
+    redlistCategory == 'Critically Endangered' & populationTrend == 'Decreasing' ~ 10,
     TRUE ~ NA_integer_
   )) 
 
@@ -307,6 +306,7 @@ fox_convex_hull <- st_as_sf(as.data.frame(fox_convex_hull))
 # Plot the convex hull polygon and species points
 ggplot() +
   geom_sf(data = aust, color = "black", alpha = 0.5) +
+  geom_sf(data = amt, color = "blue", fill = 'transparent', alpha = 0.5) +
   geom_sf(data = fox_convex_hull, fill = "lightblue", color = "black", alpha = 0.5) +
   geom_sf(data = fox_points, color = "red", size = 1) +
   theme_bw()
