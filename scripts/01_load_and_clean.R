@@ -62,8 +62,6 @@ ggplot() +
 # This now corresponds to the boundaries of the AMT as defined in Brundrett (2017).
 # DOI: https://doi.org/10.1007/978-3-319-56363-3_17
 
-ggsave("04_sp1_1.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/scp", bg  = 'white')
-
 # Dissolve the AMT IBRA polygons into a single polygon representing the boundary of the AMT
 # Buffer IBRA bioregions by 0.1 m to make geometry valid when doing union, then transform to AEA
 amt <- ibra %>%
@@ -446,13 +444,17 @@ st_firefreq <- outfile_firefreq %>%
     mean_firefreq_st = as.vector(scale(mean_firefreq))
   )
 
-# Note that no data was extracted for rows 3 (Antechinomys laniger), 12 (Chalinolobus morio), 66 (Petrogale inornata)
-# 80 (Planigale tenuirostris), or 119 (Sminthopsis crassicaudata) of the iucn_union_mod data frame.
+# Note that no data was extracted for rows 3 (Antechinomys laniger), 12 (Chalinolobus morio), 
+# 46 (Ningaui timealeyi), 66 (Petrogale inornata), 80 (Planigale tenuirostris), 84 (Pseudantechinus roryi),
+# 89 (Pseudomys chapmani) or 119 (Sminthopsis crassicaudata) of the iucn_union_mod data frame.
 # Plot these species' distributions over map of Australia and the AMT to investigate:
 ggplot() +
   geom_sf(data = aust, color = "black", alpha = 0.5) +
   geom_sf(data = iucn_union_mod[3,], fill = "lightblue", color = "black", alpha = 0.5) +
   geom_sf(data = iucn_union_mod[12,], fill = "lightyellow", color = "black", alpha = 0.5) +
+  geom_sf(data = iucn_union_mod[46,], fill = "orange", color = "black", alpha = 0.5) +
+  geom_sf(data = iucn_union_mod[84,], fill = "chartreuse", color = "black", alpha = 0.5) +
+  geom_sf(data = iucn_union_mod[89,], fill = "purple", color = "black", alpha = 0.5) +
   geom_sf(data = iucn_union_mod[66,], fill = "lightgreen", color = "black", alpha = 0.5) +
   geom_sf(data = iucn_union_mod[80,], fill = "lightpink", color = "black", alpha = 0.5) +
   geom_sf(data = iucn_union_mod[119,], fill = "lavender", color = "black", alpha = 0.5) +
@@ -460,8 +462,9 @@ ggplot() +
   theme_bw()
 # Upon inspection, these 5 species have only a very slight distributional overlap with the AMT, 
 # so we will exclude them from the analysis.
-iucn_union_mod <- iucn_union_mod[-c(3,12,66,80,119),] # 141 species remaining
+iucn_union_mod <- iucn_union_mod[-c(3,12,46,66,80,84,89,119),] # 138 species remaining
 model_species_v3 <- iucn_union_mod$scientificName
+
 # Write to shapefile
 st_write(iucn_union_mod, "data/output-data/shp/01_iucn_union_mod.shp", append = F)
 
@@ -632,17 +635,8 @@ amt_phy <-lapply(phy, keep.tip, tip = amt_dat_st$scientificName)
 # Save the list of 100 phylogenetic trees pruned to AMT mammals
 saveRDS(amt_phy, file = "data/output-data/phy/01_amt_phy.rds")
 
-# Test for correlation between predictor variables for 141 AMT mammals (cut-off = 0.7)
+# Test for correlation between predictor variables for 138 AMT mammals (cut-off = 0.7)
 corr_mat <- cor(amt_dat_st[,unlist(lapply(amt_dat_st, is.numeric))], use = "complete.obs")
-# Centroid latitude and fox overlap are negatively correlated (-0.78)
-# Litters per year and age of first reproduction negatively correlated (-0.80)
-# Age of first reproduction and generation length positively correlated (0.76)
-# Generation length negatively correlated with litter size (-0.80)
-# Geographic range and fox overlap are positively correlated (0.71)
-# Temp of wettest quarter and rainfall in driest quarter are negatively correlated (-0.84)
-# Temp of wettest quarter negatively correlated with centroid longitude (-0.79)
-# Rainfall in driest quarter is positively correlated with centroid longitude (0.80)
-# Annual fire frequency and late dry season fire frequency are positively correlated (0.78)
 
 # Run collinearity diagnostics using Variance Inflation Factor (VIF) cut-off of 5
 v_dat <- amt_dat_st[, c(5:17)]
