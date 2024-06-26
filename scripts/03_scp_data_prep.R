@@ -433,7 +433,8 @@ hii <- project(hii, r_amt) %>%
 plot(hii)
 
 # Extract maximum Human Influence Index (HII) values for each PU
-# Broadacre land values shown to increase in proximity to infrastructure such as roads, railways, & urban centres which increase profitability
+# Broadacre land values shown to increase in proximity to infrastructure such as 
+# roads, railways, & urban centres which increase profitability
 # (Chancellor et al 2019 - Measuring Australian broadacre farmland value)
 ### Number of buildings on land positively associated with land value
 ### Transport cost to nearest city negtively associated with land value
@@ -451,16 +452,20 @@ ggplot() +
   theme_minimal() +
   labs(fill = "Human Influence Index (HII)")
 
-# Create function to normalise data with NA handling
+# Create function to normalise data with NA handling and scaling to 0.01-100
 normalise <- function(x) {
   if(all(is.na(x))) {
     return(rep(NA, length(x))) # Return NA if all values are NA
   }
   range_x <- max(x, na.rm = TRUE) - min(x, na.rm = TRUE)
   if(range_x == 0) {
-    return(rep(NA, length(x))) 
+    return(rep(NA, length(x)))
   }
-  return((x - min(x, na.rm = TRUE)) / range_x)
+  # Normalize to 0-1 range
+  norm_x <- (x - min(x, na.rm = TRUE)) / range_x
+  # Scale to 0.01-100 range
+  scaled_x <- norm_x * (100 - 0.01) + 0.01
+  return(scaled_x)
 }
 
 # Normalise both HII and MEI to a 0-1 range using min-max scaling
@@ -579,18 +584,34 @@ spec_dat <- spec_dat %>%
 #### CALCULATE SPECIES REPRESENTATION TARGETS ####
 
 # TARGET 1: Calculate the CURRENT RISK representation target
-# Exclude species with ordinal threat status < 4 (i.e., exclude Near Threatened or Least Concern species)
+# Exclude species with ordinal threat status < 5 (i.e., exclude Vulnerable, Near Threatened or Least Concern species)
 spec_dat <- spec_dat %>%
-  mutate(threatenedSpecies = if_else(ordinalThreat > 3, ordinalThreat, as.numeric(NA)))
+  mutate(threatenedSpecies = if_else(ordinalThreat > 4, ordinalThreat, as.numeric(NA)))
 # Fifteen species in this category
+
+# Create function to normalise data with NA handling and scaling to 0.1 - 0.9
+normalise <- function(x) {
+  if(all(is.na(x))) {
+    return(rep(NA, length(x))) # Return NA if all values are NA
+  }
+  range_x <- max(x, na.rm = TRUE) - min(x, na.rm = TRUE)
+  if(range_x == 0) {
+    return(rep(NA, length(x)))
+  }
+  # Normalize to 0-1 range
+  norm_x <- (x - min(x, na.rm = TRUE)) / range_x
+  # Scale to 0.01-100 range
+  scaled_x <- norm_x * (0.9 - 0.1) + 0.1
+  return(scaled_x)
+}
 
 # Use min-max scaling to normalise current risk scores to between 0 - 1
 spec_dat$threatenedSpecies_scaled <- normalise(spec_dat$threatenedSpecies)
 
 # Assign weights to current risk and the proportion of species distribution in the AMT to calculate representation target
 # Note: the representation target is the proportion of the species distribution that the prioritizr algorithm aims to secure
-alpha <- 0.7 # higher weight for threatened species
-beta <- 0.3 # include lower weight for proportion of distribution in AMT to prioritise protection of threatened species that are both endemic to the AMT and have small distributions
+alpha <- 0.6 # 
+beta <- 0.4 # include lower weight for proportion of distribution in AMT to prioritise protection of threatened species that are both endemic to the AMT and have small distributions
 spec_dat$target_1 <- (alpha*spec_dat$threatenedSpecies_scaled) + (beta*spec_dat$prop)
 # Convert NA values to zeroes
 spec_dat <- spec_dat %>%
@@ -601,25 +622,24 @@ spec_dat <- spec_dat %>%
 
 # TARGET 2: Calculate the POSITIVE LATENT RISK protection target for species
 # Calculate the 90th percentile of latent risk values
-stats::quantile(spec_dat$latent_risk, probs = 0.9, na.rm = T) # 1.40
+stats::quantile(spec_dat$latent_risk, probs = 0.9, na.rm = T) # 1.3
 
 # Create new column with only those species in the top 90th percentile of positive latent risk values 
 spec_dat <- spec_dat %>%
-  mutate(positiveLatentRisk = if_else(latent_risk > 1.403645, latent_risk, as.numeric(NA)))
-# Fifteen species in this category, again
+  mutate(positiveLatentRisk = if_else(latent_risk > 1.35, latent_risk, as.numeric(NA)))
+# Fifteen species in this category again
 
 # Use min-max scaling to normalise latent risk scores to between 0 - 1
 spec_dat$latentRisk_scaled <- normalise(spec_dat$positiveLatentRisk)
 
 # Assign weights to positive latent risk and proportion of species distribution in the AMT to calculate representation target
 # (the representation target is the proportion of the species distribution area that the prioritizr algorithm aims to secure)
-alpha <- 0.7 # higher weight for species with a higher positive latent risk value
-beta <- 0.3 # include lower weight for proportion of distribution in AMT to prioritise protection of threatened species that are both endemic to the AMT and have small distributions
+alpha <- 0.6 # higher weight for species with a higher positive latent risk value
+beta <- 0.4 # include lower weight for proportion of distribution in AMT to prioritise protection of threatened species that are both endemic to the AMT and have small distributions
 spec_dat$target_2 <- (alpha*spec_dat$latentRisk_scaled) + (beta*spec_dat$prop) 
 # Convert NA values to zeroes and make any values > 0.9 equal 0.9 to ensure algorithm can run
 spec_dat <- spec_dat %>%
-  mutate(
-    target_2 = if_else(target_2 > 0.9, 0.9, target_2),
+  mutate( target_2 = if_else(target_2 > 0.9, 0.9, target_2),
     target_2 = replace_na(target_2, 0))
 
 
