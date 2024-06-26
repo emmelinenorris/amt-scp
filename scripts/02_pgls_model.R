@@ -6,7 +6,7 @@
 # Code developed by Emmeline Norris, 01/06/2024
 # 
 ######################################################
-
+install.packages('patchwork')
 library(ape)
 library(caper)
 library(MuMIn)
@@ -17,7 +17,7 @@ library(sf)
 library(terra)
 library(tidyverse)
 library(ggplot2)
-
+library(patchwork)
 
 # Disable scientific notation
 options(scipen = 999)
@@ -95,7 +95,6 @@ p <- c(0.5, 0.5, 0.5)
 pred_full <- c("adult_mass_g_tr_st",
                      "I(adult_mass_g_tr_st^2)",
                      "litter_size_n_tr_st",
-                     "litters_per_year_n_tr_st",
                      "age_first_reproduction_d_tr_st",
                      "foxAreaProp_tr_st",
                      "toadAreaProp_tr_st",
@@ -125,7 +124,6 @@ AICc(full_model$lm.res) # 524.8646
 pred_red_1 <- c("adult_mass_g_tr_st",
               "I(adult_mass_g_tr_st^2)",
               "litter_size_n_tr_st",
-              "litters_per_year_n_tr_st",
               "age_first_reproduction_d_tr_st",
               "foxAreaProp_tr_st",
               "toadAreaProp_tr_st",
@@ -143,7 +141,7 @@ summary(red_model_1$lm.res)
 # Model diagnostics
 qqnorm(red_model_1$lm.res)
 plot(red_model_1$lm.res)
-AICc(red_model_1$lm.res) # 522.8644
+AICc(red_model_1$lm.res) # 522.5395
 
 
 # 2
@@ -151,7 +149,6 @@ AICc(red_model_1$lm.res) # 522.8644
 pred_red_2 <- c("adult_mass_g_tr_st",
                 "I(adult_mass_g_tr_st^2)",
                 "litter_size_n_tr_st",
-                "litters_per_year_n_tr_st",
                 "age_first_reproduction_d_tr_st",
                 "foxAreaProp_tr_st",
                 "toadAreaProp_tr_st",
@@ -168,14 +165,13 @@ summary(red_model_2$lm.res)
 # Model diagnostics
 qqnorm(red_model_2$lm.res)
 plot(red_model_2$lm.res)
-AICc(red_model_2$lm.res) # 520.8624
+AICc(red_model_2$lm.res) # 520.4766
 
 
 # 3
 # Remove litter size variable (p = 0.4814)
 pred_red_3 <- c("adult_mass_g_tr_st",
                 "I(adult_mass_g_tr_st^2)",
-                "litters_per_year_n_tr_st",
                 "age_first_reproduction_d_tr_st",
                 "foxAreaProp_tr_st",
                 "toadAreaProp_tr_st",
@@ -191,14 +187,13 @@ summary(red_model_3$lm.res)
 # Model diagnostics
 qqnorm(red_model_3$lm.res)
 plot(red_model_3$lm.res)
-AICc(red_model_3$lm.res) # 519.0112
+AICc(red_model_3$lm.res) # 519.2484
 
 
 # 4
-# Remove cane toad range overlap variable (p = 0.2302)
+# Remove cane toad range overlap variable (p = 0.2949)
 pred_red_4 <- c("adult_mass_g_tr_st",
                 "I(adult_mass_g_tr_st^2)",
-                "litters_per_year_n_tr_st",
                 "age_first_reproduction_d_tr_st",
                 "foxAreaProp_tr_st",
                 "mean_firefreq_st",
@@ -214,15 +209,14 @@ summary(red_model_4$lm.res)
 # Model diagnostics
 qqnorm(red_model_4$lm.res)
 plot(red_model_4$lm.res)
-AICc(red_model_4$lm.res) # 518.2123
+AICc(red_model_4$lm.res) # 518.1067
 
 
 # 5
-# Remove litters per year variable (p = 0.1509)
+# Remove fox range overlap variable (p = 0.1028)
 pred_red_5 <- c("adult_mass_g_tr_st",
                 "I(adult_mass_g_tr_st^2)",
                 "age_first_reproduction_d_tr_st",
-                "foxAreaProp_tr_st",
                 "mean_firefreq_st",
                 "mean_latefire_st",
                 "rangeArea_km2_tr_st")
@@ -236,17 +230,16 @@ summary(red_model_5$lm.res)
 # Model diagnostics
 qqnorm(red_model_5$lm.res)
 plot(red_model_5$lm.res)
-AICc(red_model_5$lm.res) # 518.1067
+AICc(red_model_5$lm.res) # 518.6559 - AICc increases slightly after removal of fox range overlap var
 
 
 # 6
-# Remove fox range overlap variable (p = 0.1028)
+# Remove geographic range area variable (p = 0.0954)
 pred_red_6 <- c("adult_mass_g_tr_st",
                 "I(adult_mass_g_tr_st^2)",
                 "age_first_reproduction_d_tr_st",
                 "mean_firefreq_st",
-                "mean_latefire_st",
-                "rangeArea_km2_tr_st")
+                "mean_latefire_st")
 
 red_model_6 <- paste("ordinalThreat ~", paste(pred_red_6, collapse="+"))
 fmla <- as.formula(red_model_6)
@@ -257,14 +250,15 @@ summary(red_model_6$lm.res)
 # Model diagnostics
 qqnorm(red_model_6$lm.res)
 plot(red_model_6$lm.res)
-AICc(red_model_6$lm.res) # 518.6559 - AICc increases slightly after removal of fox range overlap var
+AICc(red_model_6$lm.res) # 519.3437
 
 
 # 7
-# Remove geographic range area variable (p = 0.0954)
+# Sequentially add removed predictors back in 
 pred_red_7 <- c("adult_mass_g_tr_st",
-                "I(adult_mass_g_tr_st^2)",
                 "age_first_reproduction_d_tr_st",
+                "rangeArea_km2_tr_st",
+                "foxAreaProp_tr_st",
                 "mean_firefreq_st",
                 "mean_latefire_st")
 
@@ -277,7 +271,7 @@ summary(red_model_7$lm.res)
 # Model diagnostics
 qqnorm(red_model_7$lm.res)
 plot(red_model_7$lm.res)
-AICc(red_model_7$lm.res) # 519.3437
+AICc(red_model_7$lm.res) 
 
 
 ## Reduced model #5 has lowest AICc value (518.1067) by a very small amount
@@ -287,20 +281,20 @@ fmla_null <- as.formula('ordinalThreat ~ 1') # intercept-only model without pred
 model_null <- fitspphylo(formula=fmla_null, data=compdat$data, spmatrix=spmat, phylomatrix=phylomat, p=p)
 
 # Likelihood ratio test for full and reduced models
-lmtest::lrtest(full_model$lm.res, red_model_5$lm.res)
-# P-value of 0.3918 indicates that the additional vars in full model do not improve model fit
+lmtest::lrtest(full_model$lm.res, red_model_7$lm.res)
+# P-value of 0.3197 indicates that the additional vars in full model do not improve model fit
 
 # Likelihood ratio test for reduced models #5 and null model
-lmtest::lrtest(red_model_5$lm.res, model_null$lm.res)
-# P-value of < 0.05 indicates the reduced model is significantly better at explaining variability in data compared to null model
+lmtest::lrtest(red_model_7$lm.res, model_null$lm.res)
+# P-value of < 0.0005 indicates the reduced model is significantly better at explaining variability in data compared to null model
 
 # Calculate R^2
 r2 <- R2_lik(mod = red_model_5$lm.res, mod.r = model_null$lm.res)
-r2*100 # r^2 = 30.02903
+r2*100 # r^2 = 28.61%
 
 # Calculate delta AICc for full and minimum adequate model 
-d_AICc <- AICc(full_model$lm.res) - AICc(red_model_5$lm.res)
-d_AICc # 6.757928
+d_AICc <- AICc(full_model$lm.res) - AICc(red_model_7$lm.res)
+d_AICc # 5.911507
 
 #### PREDICT LATENT EXTINCTION RISK FOR AMT MAMMALS ####
 
@@ -312,10 +306,10 @@ amt_species_df$scientificName <- gsub(" ", "_", amt_species_df$scientificName)
 # Run best fitting reduced model with 100 phylogenies
 for (i in 1:100){ 
   compdat <- comparative.data(phy=amt_phy[[1]], data= amt_dat_st, names.col="scientificName")
-  red_model_5 <- paste("ordinalThreat ~", paste(pred_red_5, collapse="+"))
-  fmla <- as.formula(red_model_5)
-  red_model_5 <- fitspphylo(formula=fmla, data=compdat$data, spmatrix=spmat, phylomatrix=phylomat, p=p)
-  saveRDS(red_model_5$lm.res, file=paste0("data/output-data/mod/02_model", i, ".rds"))
+  red_model_7 <- paste("ordinalThreat ~", paste(pred_red_7, collapse="+"))
+  fmla <- as.formula(red_model_7)
+  red_model_7 <- fitspphylo(formula=fmla, data=compdat$data, spmatrix=spmat, phylomatrix=phylomat, p=p)
+  saveRDS(red_model_7$lm.res, file=paste0("data/output-data/mod/02_model", i, ".rds"))
 }
 
 # Create a list of file paths to load the 100 models
@@ -356,7 +350,7 @@ all_threat <- all_threat %>%
   dplyr::select(1,2,103,104)
 
 
-#### CREATE MAP OF MEAN LATENT RISK FROM MODELS ####
+#### CREATE MAPS OF SUM AND MEAN LATENT RISK FROM MODELS ####
 
 # Load shapefile of IUCN distribution polygons for mammals in the AMT generated in 01_load_and_clean
 iucn_union_mod <-  read_sf("data/output-data/shp/01_iucn_union_mod.shp")
@@ -385,12 +379,119 @@ latent_stack <- rast(latent_risk_rasters)
 # Calculate the net latent extinction risk for the AMT, excluding NA values
 sum_latent_risk <- sum(latent_stack, na.rm = TRUE) %>%
   mask(r_amt)
-plot(sum_latent_risk)
+
+# Reproject to WGS84 (EPSG:4326) geographic coordinate system for plotting
+sum_latent_risk <- project(sum_latent_risk, "EPSG:4326")
+
+# Convert the raster data to a data frame
+sum_latent_rast_df <- as.data.frame(sum_latent_risk, xy = TRUE)
+
+# Plot the raster data using ggplot2
+l1 <- ggplot(sum_latent_rast_df, aes(x = x, y = y, fill = sum)) +
+  geom_raster() +
+  scale_fill_viridis_c(option = "D",
+                       breaks = seq(-10, 20, by = 10), 
+                       labels = seq(-10, 20, by = 10)) +
+  labs(x = "Longitude", y = "Latitude", fill = "Sum") +
+  theme_minimal() +
+  coord_fixed(ratio = 1 / cos(mean(sum_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
+  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +  # Format x axis
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) 
+
+ggsave("02_sum_latent_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
+
+
 # Calculate the mean latent extinction risk for the AMT, excluding NA values
 avg_latent_risk <- mean(latent_stack, na.rm = TRUE) %>%
   mask(r_amt)
-plot(avg_latent_risk)
+
+# Reproject to WGS84 (EPSG:4326) geographic coordinate system for plotting
+avg_latent_risk <- project(avg_latent_risk, "EPSG:4326")
+
+# Convert the raster data to a data frame
+avg_latent_rast_df <- as.data.frame(avg_latent_risk, xy = TRUE)
+
+# Plot the raster data using ggplot2
+l2 <- ggplot(avg_latent_rast_df, aes(x = x, y = y, fill = mean)) +
+  geom_raster() +
+  scale_fill_viridis_c(option = "D",
+                       breaks = seq(-4, 2, by = 1), 
+                       labels = seq(-4, 2, by = 1)) +
+  labs(x = "Longitude", y = "Latitude", fill = "Mean") +
+  theme_minimal() +
+  coord_fixed(ratio = 1 / cos(mean(avg_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
+  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +  # Format x axis
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) 
+
+ggsave("02_mean_latent_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
+
+#### CREATE MAPS OF SUM AND MEAN CURRENT RISK ####
+
+# Initialize an empty list to store the raster layers
+curr_risk_rasters <- list()
+for (i in 1:length(iucn_threat$scientificName)) {
+  curr_risk <- iucn_threat$ordinalThreat[i]
+  curr_vect <- vect(iucn_threat[i, "geometry"]) # Convert the current geometry to a terra vector object
+  curr_rast <- rasterize(curr_vect, r_amt, field = curr_risk, background = NA) # Rasterize the vector object using the template raster and threat vals
+  curr_risk_rasters[[i]] <- curr_rast # Store the raster in the list
+}
+# Combine the list of rasters into a single raster stack
+curr_risk_stack <- rast(curr_risk_rasters)
+
+# Calculate the net latent extinction risk for the AMT, excluding NA values
+sum_curr_risk <- sum(curr_risk_stack, na.rm = TRUE) %>%
+  mask(r_amt)
+
+# Reproject to WGS84 (EPSG:4326) geographic coordinate system for plotting
+sum_curr_risk <- project(sum_curr_risk, "EPSG:4326")
+
+# Convert the raster data to a data frame
+sum_curr_risk_df <- as.data.frame(sum_curr_risk, xy = TRUE)
+
+# Plot the raster data using ggplot2
+c1 <- ggplot(sum_curr_risk_df, aes(x = x, y = y, fill = sum)) +
+  geom_raster() +
+  scale_fill_viridis_c(option = "D",
+                       breaks = seq(0, 120, by = 20), 
+                       labels = seq(0, 120, by = 20)) +
+  labs(x = "Longitude", y = "Latitude", fill = "Sum") +
+  theme_minimal() +
+  coord_fixed(ratio = 1 / cos(mean(sum_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
+  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +  # Format x axis
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) 
+
+ggsave("02_sum_current_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
 
 
+# Calculate the mean latent extinction risk for the AMT, excluding NA values
+avg_curr_risk <- mean(curr_risk_stack, na.rm = TRUE) %>%
+  mask(r_amt)
 
+# Reproject to WGS84 (EPSG:4326) geographic coordinate system for plotting
+avg_curr_risk <- project(avg_curr_risk, "EPSG:4326")
 
+# Convert the raster data to a data frame
+avg_curr_risk_df <- as.data.frame(avg_curr_risk, xy = TRUE)
+
+# Plot the raster data using ggplot2
+c2 <- ggplot(avg_curr_risk_df, aes(x = x, y = y, fill = mean)) +
+  geom_raster() +
+  scale_fill_viridis_c(option = "D", 
+                       breaks = seq(0, 6, by = 1), 
+                       labels = seq(0, 6, by = 1)) +
+  labs(x = "Longitude", y = "Latitude", fill = "Mean") +
+  theme_minimal() +
+  coord_fixed(ratio = 1 / cos(mean(avg_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
+  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +  # Format x axis
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) 
+
+ggsave("02_mean_current_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
+
+# Combine the four maps into a 2x2 grid
+combined_plot <- (l1 | l2) / (c1 | c2) + 
+  plot_annotation(tag_levels = 'a') 
+
+# Print the combined plot
+print(combined_plot)
+
+ggsave("02_combined_risk_plots.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
