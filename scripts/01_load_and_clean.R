@@ -55,11 +55,13 @@ ibra <- ibra %>%
 
 # Plot the IBRA bioregions with AMT bioregions coloured green
 ggplot() +
-  geom_sf(data = ibra, aes(fill = is_amt)) +
+  geom_sf(data = ibra, aes(fill = is_amt, color = "gray40")) +
   scale_fill_manual(values = c("Yes" = "green", "No" = "grey")) +
   theme_classic()     
 # This now corresponds to the boundaries of the AMT as defined in Brundrett (2017).
 # DOI: https://doi.org/10.1007/978-3-319-56363-3_17
+
+ggsave("04_sp1_1.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/scp", bg  = 'white')
 
 # Dissolve the AMT IBRA polygons into a single polygon representing the boundary of the AMT
 # Buffer IBRA bioregions by 0.1 m to make geometry valid when doing union, then transform to AEA
@@ -92,6 +94,32 @@ ggplot(data = wt) +
   geom_sf()
 # Write to shapefile
 st_write(wt, "data/output-data/shp/01_wet-tropics.shp", append = F)
+
+#### PRODUCE PLOT SHOWING IBRA AMT DELINEATION in WGS PROJECTION ####
+
+bbox_wgs <- st_bbox(c(xmin = 112, ymin = -45, xmax = 158, ymax = -9), crs = st_crs(4326))
+
+aust_wgs <- aust %>%
+  st_transform(crs = st_crs(4326)) %>%
+  st_crop(bbox_wgs)
+
+amt_wgs <- amt %>%
+  st_transform(crs = st_crs(4326)) %>%
+  st_crop(bbox_wgs)
+
+wt_wgs <- wt %>%
+  st_transform(crs = st_crs(4326)) %>%
+  st_crop(bbox_wgs)
+
+# Plot AMT bioregions
+ggplot() +
+  geom_sf(data = aust_wgs, fill = 'gray90') +
+  geom_sf(data = amt_wgs, fill = '#9dba9a') +
+  geom_sf(data = wt_wgs, fill = 'gray20') +
+  theme_minimal()    
+
+ggsave("01_amt_ibra_bioregions.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/amt", bg  = 'white')
+
 
 #### RASTER GRID FOR AUSTRALIA AND AMT ####
 
