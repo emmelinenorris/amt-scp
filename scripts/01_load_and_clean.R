@@ -6,7 +6,7 @@
 # Code developed by Emmeline Norris, 01/06/2024
 # 
 ######################################################
-
+install.packages('ggthemes')
 library(sf)
 library(terra)
 library(tidyverse)
@@ -14,6 +14,7 @@ library(rnaturalearth)
 library(ggplot2)
 library(ape)
 library(usdm)
+library(ggthemes)
 
 # Disable scientific notation
 options(scipen = 999)
@@ -97,28 +98,19 @@ st_write(wt, "data/output-data/shp/01_wet-tropics.shp", append = F)
 
 #### PRODUCE PLOT SHOWING IBRA AMT DELINEATION in WGS PROJECTION ####
 
-bbox_wgs <- st_bbox(c(xmin = 112, ymin = -45, xmax = 158, ymax = -9), crs = st_crs(4326))
-
-aust_wgs <- aust %>%
-  st_transform(crs = st_crs(4326)) %>%
-  st_crop(bbox_wgs)
-
-amt_wgs <- amt %>%
-  st_transform(crs = st_crs(4326)) %>%
-  st_crop(bbox_wgs)
-
-wt_wgs <- wt %>%
-  st_transform(crs = st_crs(4326)) %>%
-  st_crop(bbox_wgs)
-
 # Plot AMT bioregions
 ggplot() +
-  geom_sf(data = aust_wgs, fill = 'gray90') +
-  geom_sf(data = amt_wgs, fill = '#9dba9a') +
-  geom_sf(data = wt_wgs, fill = 'gray20') +
-  theme_minimal()    
+  geom_sf(data = aust, fill = 'gray90') +
+  geom_sf(data = amt, fill = '#9dba9a') +
+  geom_sf(data = wt, fill = 'gray20') +
+  geom_sf(data = ibra_simple, fill = 'transparent', color = 'gray30') +
+  xlab("Longitude") + ylab("Latitude") +
+  coord_sf(crs = 4326, xlim = c(110, 160), ylim = c(-44, -11)) +
+  theme_minimal() +
+  theme(axis.title = element_text(size=12),
+        axis.text = element_text(size = 10))
 
-ggsave("01_amt_ibra_bioregions.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/amt", bg  = 'white')
+ggsave("01_amt_ibra_bioregions.png", units="cm", width=20, height=16, dpi=300, path = "results/fig/amt", bg  = 'white')
 
 
 #### RASTER GRID FOR AUSTRALIA AND AMT ####
