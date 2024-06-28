@@ -73,6 +73,9 @@ amt <- ibra %>%
   st_intersection(aust) %>%
   st_as_sf()
 
+ibra_amt <- ibra %>%
+  filter(is_amt == "Yes")
+
 # Crop bounding box to remove Badu, Moa, Boigu and Saibai islands
 bbox <- st_bbox(c(xmin = -1315000, ymin = -2360000, xmax = 1619000, ymax = -1150000), crs = st_crs(amt))
 amt <- st_crop(amt, bbox)
@@ -98,10 +101,10 @@ st_write(wt, "data/output-data/shp/01_wet-tropics.shp", append = F)
 
 # Plot AMT bioregions
 ggplot() +
-  geom_sf(data = aust, fill = 'gray90') +
-  geom_sf(data = amt, fill = '#9dba9a') +
+  geom_sf(data = aust, fill = 'gray95') +
+  geom_sf(data = amt, fill = '#c4d5c2') +
   geom_sf(data = wt, fill = 'gray20') +
-  geom_sf(data = ibra_simple, fill = 'transparent', color = 'gray30') +
+  geom_sf(data = ibra, fill = 'transparent', color = 'gray50') +
   xlab("Longitude") + ylab("Latitude") +
   coord_sf(crs = 4326, xlim = c(110, 160), ylim = c(-44, -11)) +
   theme_minimal() +
@@ -110,6 +113,92 @@ ggplot() +
 
 ggsave("01_amt_ibra_bioregions.png", units="cm", width=20, height=16, dpi=300, path = "results/fig/amt", bg  = 'white')
 
+
+# Now plot AMT with important places:
+
+# Create a data frame for cities
+cities <- data.frame(
+  name = c("DARWIN", "CAIRNS"),
+  lat = c(-12.4634, -16.9186),
+  lon = c(130.8456, 145.7781))
+# Create a data frame for cities
+city_names <- data.frame(
+  name = c("DARWIN", "CAIRNS"),
+  lat = c(-12.2, -16.5),
+  lon = c(129.7, 146.6))
+
+# Create a data frame for towns
+towns <- data.frame(
+  name = c("Broome", "Katherine"),
+  lat = c(-17.9610, -14.4641),
+  lon = c(122.2355, 132.2638))
+# Create a data frame for towns
+town_names <- data.frame(
+  name = c("Broome", "Katherine"),
+  lat = c(-17.7, -14.3),
+  lon = c(121.4, 133.3))
+
+# Create a data frame for regions
+regions <- data.frame(
+  name = c("Cape\nYork\nPeninsula", "Kimberley", 
+           "Top End"),
+  lat = c(-16, -16, -13.0000),
+  lon = c(142.9,127, 133))
+
+# Create a data frame for gaps
+gaps <- data.frame(
+  name = c("Bonaparte\nGap", "Gulf of\nCarpentaria"),
+  lat = c(-13.3, -15.0000),
+  lon = c(128.3, 139.0000))
+
+# Crop bounding box to remove Badu, Moa, Boigu and Saibai islands
+aust_bbox <- st_bbox(c(xmin = 116, ymin = -22, xmax = 152, ymax = -8), crs = st_crs(4326))
+aust_crop <- aust %>%
+  st_transform(crs = st_crs(4326)) %>%
+  st_crop(aust_bbox)
+
+aust_name <- data.frame(name = c("AUSTRALIA"),
+  lat = c(-20), lon = c(133))
+
+aust_bbox_bound <- st_as_sfc(st_bbox(aust_bbox))
+
+# Create sf objects for cities, towns, regions, and gaps
+cities_sf <- st_as_sf(cities, coords = c("lon", "lat"), crs = 4326)
+city_names_sf <- st_as_sf(city_names, coords = c("lon", "lat"), crs = 4326)
+towns_sf <- st_as_sf(towns, coords = c("lon", "lat"), crs = 4326)
+town_names_sf <- st_as_sf(town_names, coords = c("lon", "lat"), crs = 4326)
+regions_sf <- st_as_sf(regions, coords = c("lon", "lat"), crs = 4326)
+gaps_sf <- st_as_sf(gaps, coords = c("lon", "lat"), crs = 4326)
+aust_name_sf <- st_as_sf(aust_name, coords = c("lon", "lat"), crs = 4326)
+
+# Create the map
+ggplot() +
+  geom_sf(data = aust_crop, fill = "white", color = "#8da78a") +
+  geom_sf(data = aust_bbox_bound, color = "white", fill = "transparent", linewidth = 8) +
+  geom_sf_text(data = aust_name_sf, aes(label = name), size = 5, fontface = "bold", color = 'gray70') +
+  geom_sf(data = wt, fill = '#3e4a3d') +
+  geom_sf(data = ibra_amt, fill = '#c4d5c2', color = '#8da78a') +
+  geom_sf(data = cities_sf, color = "red", size = 3) +
+  geom_sf_text(data = city_names_sf, aes(label = name), size = 3, fontface = "bold") +
+  geom_sf(data = towns_sf, color = "black", size = 2) +
+  geom_sf_text(data = town_names_sf, aes(label = name), size = 2.5) +
+  geom_sf_text(data = regions_sf, aes(label = name), size = 3.8, fontface = "bold", color = "#4e5d4d") +
+  geom_sf_text(data = gaps_sf, aes(label = name), size = 3, fontface = "italic", color = 'gray40') +
+  xlab("Longitude") + ylab("Latitude") +
+  theme_classic() +
+  theme(axis.title = element_text(size=12),
+        axis.text = element_text(size = 11),
+        legend.title = element_blank(),
+        legend.position = "none",
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        plot.margin = unit(c(0,0,0,0), "cm")) 
+
+ggsave("01_amt_POI.png", units="cm", width=25, height=10, dpi=300, path = "results/fig/amt", bg  = 'white')
 
 #### RASTER GRID FOR AUSTRALIA AND AMT ####
 

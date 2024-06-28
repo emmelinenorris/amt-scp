@@ -95,6 +95,7 @@ p <- c(0.5, 0.5, 0.5)
 pred_full <- c("adult_mass_g_tr_st",
                      "I(adult_mass_g_tr_st^2)",
                      "litter_size_n_tr_st",
+                     "litters_per_year_n_tr_st",
                      "age_first_reproduction_d_tr_st",
                      "foxAreaProp_tr_st",
                      "toadAreaProp_tr_st",
@@ -113,24 +114,25 @@ summary(full_model$lm.res)  # the model summary with coefficient estimates, etc.
 # Model diagnostics
 qqnorm(full_model$lm.res) # Residuals appear normally distributed in centre with slightly heavier tails than expected for normal dist
 plot(full_model$lm.res) # Plot indicates heteroscedasticity
-AICc(full_model$lm.res) # 524.8646
+AICc(full_model$lm.res) # 515.5117
 
 
 ## REDUCED MODELS ##
 
 # 1
 # Remove predictors based on highest p-values to see if it affects model fit
-# Remove temperature of wettest quarter (bio8) variable (p = 0.5158)
+# Remove human influence variable (p = 0.9785)
 pred_red_1 <- c("adult_mass_g_tr_st",
-              "I(adult_mass_g_tr_st^2)",
-              "litter_size_n_tr_st",
-              "age_first_reproduction_d_tr_st",
-              "foxAreaProp_tr_st",
-              "toadAreaProp_tr_st",
-              "mean_firefreq_st",
-              "mean_latefire_st",
-              "mean_hii_tr_st",
-              "rangeArea_km2_tr_st")
+                "I(adult_mass_g_tr_st^2)",
+                "litter_size_n_tr_st",
+                "litters_per_year_n_tr_st",
+                "age_first_reproduction_d_tr_st",
+                "foxAreaProp_tr_st",
+                "toadAreaProp_tr_st",
+                "mean_bio8_st",
+                "mean_firefreq_st",
+                "mean_latefire_st",
+                "rangeArea_km2_tr_st")
 
 red_model_1 <- paste("ordinalThreat ~", paste(pred_red_1, collapse="+"))
 fmla <- as.formula(red_model_1)
@@ -141,14 +143,15 @@ summary(red_model_1$lm.res)
 # Model diagnostics
 qqnorm(red_model_1$lm.res)
 plot(red_model_1$lm.res)
-AICc(red_model_1$lm.res) # 522.5395
+AICc(red_model_1$lm.res) # 513.0334
 
 
 # 2
-# Remove human influence index (hii) variable (p = 0.5329)
+# Remove precipitation variable (p = 0.7730)
 pred_red_2 <- c("adult_mass_g_tr_st",
                 "I(adult_mass_g_tr_st^2)",
                 "litter_size_n_tr_st",
+                "litters_per_year_n_tr_st",
                 "age_first_reproduction_d_tr_st",
                 "foxAreaProp_tr_st",
                 "toadAreaProp_tr_st",
@@ -165,13 +168,14 @@ summary(red_model_2$lm.res)
 # Model diagnostics
 qqnorm(red_model_2$lm.res)
 plot(red_model_2$lm.res)
-AICc(red_model_2$lm.res) # 520.4766
+AICc(red_model_2$lm.res) # 510.6854
 
 
 # 3
-# Remove litter size variable (p = 0.4814)
+# Remove litter size variable (p = 0.5716)
 pred_red_3 <- c("adult_mass_g_tr_st",
                 "I(adult_mass_g_tr_st^2)",
+                "litters_per_year_n_tr_st",
                 "age_first_reproduction_d_tr_st",
                 "foxAreaProp_tr_st",
                 "toadAreaProp_tr_st",
@@ -187,18 +191,19 @@ summary(red_model_3$lm.res)
 # Model diagnostics
 qqnorm(red_model_3$lm.res)
 plot(red_model_3$lm.res)
-AICc(red_model_3$lm.res) # 519.2484
+AICc(red_model_3$lm.res) # 508.6338
 
 
 # 4
-# Remove cane toad range overlap variable (p = 0.2949)
+# Remove (adult mass)^2 variable (p = 0.1518)
 pred_red_4 <- c("adult_mass_g_tr_st",
-                "I(adult_mass_g_tr_st^2)",
-                "age_first_reproduction_d_tr_st",
-                "foxAreaProp_tr_st",
-                "mean_firefreq_st",
-                "mean_latefire_st",
-                "rangeArea_km2_tr_st")
+               "litters_per_year_n_tr_st",
+               "age_first_reproduction_d_tr_st",
+               "foxAreaProp_tr_st",
+               "toadAreaProp_tr_st",
+               "mean_firefreq_st",
+               "mean_latefire_st",
+               "rangeArea_km2_tr_st")
 
 red_model_4 <- paste("ordinalThreat ~", paste(pred_red_4, collapse="+"))
 fmla <- as.formula(red_model_4)
@@ -209,14 +214,15 @@ summary(red_model_4$lm.res)
 # Model diagnostics
 qqnorm(red_model_4$lm.res)
 plot(red_model_4$lm.res)
-AICc(red_model_4$lm.res) # 518.1067
+AICc(red_model_4$lm.res) # 508.4937
 
 
 # 5
-# Remove fox range overlap variable (p = 0.1028)
+# Remove litters per year variable (p = 0.0949)
 pred_red_5 <- c("adult_mass_g_tr_st",
-                "I(adult_mass_g_tr_st^2)",
                 "age_first_reproduction_d_tr_st",
+                "foxAreaProp_tr_st",
+                "toadAreaProp_tr_st",
                 "mean_firefreq_st",
                 "mean_latefire_st",
                 "rangeArea_km2_tr_st")
@@ -230,71 +236,30 @@ summary(red_model_5$lm.res)
 # Model diagnostics
 qqnorm(red_model_5$lm.res)
 plot(red_model_5$lm.res)
-AICc(red_model_5$lm.res) # 518.6559 - AICc increases slightly after removal of fox range overlap var
+AICc(red_model_5$lm.res) # 509.1639 - AICc increases slightly after removal of fox range overlap var
 
 
-# 6
-# Remove geographic range area variable (p = 0.0954)
-pred_red_6 <- c("adult_mass_g_tr_st",
-                "I(adult_mass_g_tr_st^2)",
-                "age_first_reproduction_d_tr_st",
-                "mean_firefreq_st",
-                "mean_latefire_st")
-
-red_model_6 <- paste("ordinalThreat ~", paste(pred_red_6, collapse="+"))
-fmla <- as.formula(red_model_6)
-red_model_6 <- fitspphylo(formula=fmla, data=compdat$data, spmatrix=spmat, phylomatrix=phylomat, p=p)
-red_model_6$p.res # the maximum likelihood estimates of the 3 parameters in p
-summary(red_model_6$lm.res)
-
-# Model diagnostics
-qqnorm(red_model_6$lm.res)
-plot(red_model_6$lm.res)
-AICc(red_model_6$lm.res) # 519.3437
-
-
-# 7
-# Sequentially add removed predictors back in 
-pred_red_7 <- c("adult_mass_g_tr_st",
-                "age_first_reproduction_d_tr_st",
-                "rangeArea_km2_tr_st",
-                "foxAreaProp_tr_st",
-                "mean_firefreq_st",
-                "mean_latefire_st")
-
-red_model_7 <- paste("ordinalThreat ~", paste(pred_red_7, collapse="+"))
-fmla <- as.formula(red_model_7)
-red_model_7 <- fitspphylo(formula=fmla, data=compdat$data, spmatrix=spmat, phylomatrix=phylomat, p=p)
-red_model_7$p.res # the maximum likelihood estimates of the 3 parameters in p
-summary(red_model_7$lm.res)
-
-# Model diagnostics
-qqnorm(red_model_7$lm.res)
-plot(red_model_7$lm.res)
-AICc(red_model_7$lm.res) 
-
-
-## Reduced model #5 has lowest AICc value (518.1067) by a very small amount
+## Reduced model #4 has lowest AICc value by a very small amount
 
 # Construct a null model for comparison
 fmla_null <- as.formula('ordinalThreat ~ 1') # intercept-only model without predictors
 model_null <- fitspphylo(formula=fmla_null, data=compdat$data, spmatrix=spmat, phylomatrix=phylomat, p=p)
 
 # Likelihood ratio test for full and reduced models
-lmtest::lrtest(full_model$lm.res, red_model_7$lm.res)
-# P-value of 0.3197 indicates that the additional vars in full model do not improve model fit
+lmtest::lrtest(full_model$lm.res, red_model_4$lm.res)
+# P-value of 0.6155 indicates that the additional vars in full model do not improve model fit
 
 # Likelihood ratio test for reduced models #5 and null model
-lmtest::lrtest(red_model_7$lm.res, model_null$lm.res)
+lmtest::lrtest(red_model_4$lm.res, model_null$lm.res)
 # P-value of < 0.0005 indicates the reduced model is significantly better at explaining variability in data compared to null model
 
 # Calculate R^2
-r2 <- R2_lik(mod = red_model_5$lm.res, mod.r = model_null$lm.res)
-r2*100 # r^2 = 28.61%
+r2 <- R2_lik(mod = red_model_4$lm.res, mod.r = model_null$lm.res)
+r2*100 # r^2 = 32.53%
 
 # Calculate delta AICc for full and minimum adequate model 
-d_AICc <- AICc(full_model$lm.res) - AICc(red_model_7$lm.res)
-d_AICc # 5.911507
+d_AICc <- AICc(full_model$lm.res) - AICc(red_model_4$lm.res)
+d_AICc # 7.01
 
 #### PREDICT LATENT EXTINCTION RISK FOR AMT MAMMALS ####
 
@@ -306,10 +271,10 @@ amt_species_df$scientificName <- gsub(" ", "_", amt_species_df$scientificName)
 # Run best fitting reduced model with 100 phylogenies
 for (i in 1:100){ 
   compdat <- comparative.data(phy=amt_phy[[1]], data= amt_dat_st, names.col="scientificName")
-  red_model_7 <- paste("ordinalThreat ~", paste(pred_red_7, collapse="+"))
-  fmla <- as.formula(red_model_7)
-  red_model_7 <- fitspphylo(formula=fmla, data=compdat$data, spmatrix=spmat, phylomatrix=phylomat, p=p)
-  saveRDS(red_model_7$lm.res, file=paste0("data/output-data/mod/02_model", i, ".rds"))
+  red_model_4 <- paste("ordinalThreat ~", paste(pred_red_4, collapse="+"))
+  fmla <- as.formula(red_model_4)
+  red_model_4 <- fitspphylo(formula=fmla, data=compdat$data, spmatrix=spmat, phylomatrix=phylomat, p=p)
+  saveRDS(red_model_4$lm.res, file=paste0("data/output-data/mod/02_model", i, ".rds"))
 }
 
 # Create a list of file paths to load the 100 models
@@ -401,9 +366,6 @@ l1 <- ggplot(sum_latent_rast_df, aes(x = x, y = y, fill = sum)) +
         axis.ticks = element_blank(),  # Remove axis ticks
         axis.line = element_blank())
 
-ggsave("02_sum_latent_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
-
-
 # Calculate the mean latent extinction risk for the AMT, excluding NA values
 avg_latent_risk <- mean(latent_stack, na.rm = TRUE) %>%
   mask(r_amt)
@@ -428,8 +390,6 @@ l2 <- ggplot(avg_latent_rast_df, aes(x = x, y = y, fill = mean)) +
         axis.text = element_blank(),  # Remove axis text
         axis.ticks = element_blank(),  # Remove axis ticks
         axis.line = element_blank()) 
-
-ggsave("02_mean_latent_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
 
 #### CREATE MAPS OF SUM AND MEAN CURRENT RISK ####
 
@@ -469,9 +429,6 @@ c1 <- ggplot(sum_curr_risk_df, aes(x = x, y = y, fill = sum)) +
         axis.ticks = element_blank(),  # Remove axis ticks
         axis.line = element_blank())
 
-ggsave("02_sum_current_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
-
-
 # Calculate the mean latent extinction risk for the AMT, excluding NA values
 avg_curr_risk <- mean(curr_risk_stack, na.rm = TRUE) %>%
   mask(r_amt)
@@ -496,8 +453,6 @@ c2 <- ggplot(avg_curr_risk_df, aes(x = x, y = y, fill = mean)) +
         axis.text = element_blank(),  # Remove axis text
         axis.ticks = element_blank(),  # Remove axis ticks
         axis.line = element_blank())
-
-ggsave("02_mean_current_risk.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
 
 # Combine the four maps into a 2x2 grid
 combined_plot <- (l1 | l2) / (c1 | c2) + 
