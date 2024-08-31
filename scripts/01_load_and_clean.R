@@ -506,6 +506,35 @@ st_toad <- outfile_toad %>%
     toadAreaProp_tr_st = as.vector(scale(toadAreaProp_tr))
   )
 
+#### CALCULATE PROPORTION RANGE OVERLAP WITH AMT ####
+
+# Calculate total species distribution area 
+outfile_overlap <- data.frame(scientificName = model_species_v2, area_total = NA, area_amt = NA, percent_overlap = NA)
+for (i in 1:length(model_species_v2)) {
+  curr_shape <- iucn_union_mod[i, "geometry"]
+  curr_area <- st_area(curr_shape)
+  outfile_overlap$area_total[i] <- curr_area
+}
+
+# Calculate area of species distribution that intersects with the AMT
+for (i in 1:length(model_species_v2)) {
+  curr_shape <- iucn_union_mod[i, "geometry"]
+  curr_intersect <- st_intersection(curr_shape, amt)
+  curr_area <- st_area(curr_intersect)
+  outfile_overlap$area_amt[i] <- curr_area
+}
+
+# Calculate the proportion of each species' distributions that overlap with the AMT
+outfile_overlap <- outfile_overlap %>%
+  mutate(percent_overlap = (area_amt/area_total)*100)
+
+# Remove species with < 2% range overlap with AMT 5
+filtered_overlap <- outfile_overlap %>%
+  filter(percent_overlap >= 2)
+
+# Find species remaining 
+model_species_v3 <- unique(filtered_overlap$scientificName) # 128 species
+
 #### NAFI FIRE FREQUENCY DATA 2000 - 2022 ####
 
 # Load geoTIFF of fire frequency 2000 - 2022 and project to raster grid of AMT
