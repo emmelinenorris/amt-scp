@@ -535,6 +535,14 @@ filtered_overlap <- outfile_overlap %>%
 # Find species remaining 
 model_species_v3 <- unique(filtered_overlap$scientificName) # 128 species
 
+# Filter unioned IUCN polygons to include 128 mammal species with >2% AMT overlap
+iucn_union_mod <- iucn_union_mod %>%
+  filter(scientificName %in% model_species_v3) %>%
+  arrange(scientificName)
+
+# Write to shapefile
+st_write(iucn_union_mod, "data/output-data/shp/01_iucn_union_mod.shp", append = F)
+
 #### NAFI FIRE FREQUENCY DATA 2000 - 2022 ####
 
 # Load geoTIFF of fire frequency 2000 - 2022 and project to raster grid of AMT
@@ -544,8 +552,8 @@ firefreq_00_22 <- project(firefreq_00_22, r_amt) %>%
 plot(firefreq_00_22)
 
 # Calculate mean annual fire frequency for 1 x 1 km grid cells in species' distributions
-outfile_firefreq <- data.frame("scientificName" = iucn_union_mod$scientificName,"mean_firefreq"=NA)
-for (i in 1:nrow(iucn_union_mod)) {
+outfile_firefreq <- data.frame("scientificName" = model_species_v3,"mean_firefreq"=NA)
+for (i in 1:length(model_species_v3)) {
   # Extract the current polygon
   curr_vect <- vect(iucn_union_mod[i, "geometry"]) 
   # Mask the fire frequency raster by the current polygon
@@ -562,55 +570,6 @@ st_firefreq <- outfile_firefreq %>%
     mean_firefreq_st = as.vector(scale(mean_firefreq))
   )
 
-# Note that no data was extracted for rows 3 (Antechinomys laniger), 12 (Chalinolobus morio), 
-# 46 (Ningaui timealeyi), 66 (Petrogale inornata), 80 (Planigale tenuirostris), 84 (Pseudantechinus roryi),
-# 89 (Pseudomys chapmani) or 119 (Sminthopsis crassicaudata) of the iucn_union_mod data frame.
-# Plot these species' distributions over map of Australia and the AMT to investigate:
-ggplot() +
-  geom_sf(data = aust, color = "black", alpha = 0.5) +
-  geom_sf(data = iucn_union_mod[3,], fill = "lightblue", color = "black", alpha = 0.5) +
-  geom_sf(data = iucn_union_mod[12,], fill = "lightyellow", color = "black", alpha = 0.5) +
-  geom_sf(data = iucn_union_mod[46,], fill = "orange", color = "black", alpha = 0.5) +
-  geom_sf(data = iucn_union_mod[84,], fill = "chartreuse", color = "black", alpha = 0.5) +
-  geom_sf(data = iucn_union_mod[89,], fill = "purple", color = "black", alpha = 0.5) +
-  geom_sf(data = iucn_union_mod[66,], fill = "lightgreen", color = "black", alpha = 0.5) +
-  geom_sf(data = iucn_union_mod[80,], fill = "lightpink", color = "black", alpha = 0.5) +
-  geom_sf(data = iucn_union_mod[119,], fill = "lavender", color = "black", alpha = 0.5) +
-  geom_sf(data = amt, color = "red", alpha = 0.5) +
-  theme_bw()
-
-excluded_sp <- iucn_union_mod[c(3,12,46,66,80,84,89,119),]
-
-# Calculate total species distribution area for species to be excluded based on minimal overlap
-outfile_excluded_sp <- data.frame("scientificName" = excluded_sp$scientificName,"area_total"=NA, "area_amt"=NA, "prop_overlap"=NA)
-
-for (i in 1:length(excluded_sp$scientificName)) {
-  curr_shape <- excluded_sp[i, "geometry"]
-  curr_area <- st_area(curr_shape)
-  outfile_excluded_sp$area_total[i] <- curr_area
-}
-
-# Calculate area of species distribution that intersects with the AMT
-
-for (i in 1:length(excluded_sp$scientificName)) {
-  curr_shape <- excluded_sp[i, "geometry"]
-  curr_intersect <- st_intersection(curr_shape, amt)
-  curr_area <- st_area(curr_intersect)
-  outfile_excluded_sp$area_amt[i] <- curr_area
-}
-
-for (i in 1:length(excluded_sp$scientificName)) {
-  prop_overlap <- (outfile_excluded_sp$area_amt[i] / outfile_excluded_sp$area_total[i])*100
-  outfile_excluded_sp$prop_overlap[i] <- prop_overlap
-}
-
-# Upon inspection, these 5 species have only a very slight distributional overlap with the AMT, 
-# so we will exclude them from the analysis.
-iucn_union_mod <- iucn_union_mod[-c(3,12,46,66,80,84,89,119),] # 138 species remaining
-model_species_v3 <- iucn_union_mod$scientificName
-
-# Write to shapefile
-st_write(iucn_union_mod, "data/output-data/shp/01_iucn_union_mod.shp", append = F)
 
 # Load geoTIFF of late (post-July) fire frequency 2000 - 2022 and project to raster grid of AMT
 firefreqLate_00_22 <- rast("data/input-data/nafi/2000-2022/Fire_Freq_00-22_post_July/FFL_2000_22_gda94.tif")
