@@ -314,6 +314,21 @@ all_threat$scientificName <- gsub("_", " ", all_threat$scientificName)
 all_threat <- all_threat %>%
   dplyr::select(1,2,103,104)
 
+# Load IUCN species summary csv (includes taxonomic details and threat category)
+iucn_summary = read_csv("data/input-data/iucn/Summary/simple_summary.csv")
+
+# Merge all_threat df with Red List category and population trend columns of summary table
+all_threat_df <- all_threat %>%
+  left_join(iucn_summary %>% 
+              dplyr::select(scientificName, redlistCategory, populationTrend), by = "scientificName")
+
+#Reorder columns
+all_threat_df <- threat_tbl %>%
+  dplyr::select(1, 5, 6, 2, 3, 4, everything())
+
+# Write to csv
+write_csv(all_threat_df, "data/output-data/tbl/02_all_threat_df.csv", append = F)
+
 
 #### CREATE MAPS OF SUM AND MEAN LATENT RISK FROM MODELS ####
 
