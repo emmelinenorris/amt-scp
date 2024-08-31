@@ -549,6 +549,32 @@ ggplot() +
   geom_sf(data = iucn_union_mod[119,], fill = "lavender", color = "black", alpha = 0.5) +
   geom_sf(data = amt, color = "red", alpha = 0.5) +
   theme_bw()
+
+excluded_sp <- iucn_union_mod[c(3,12,46,66,80,84,89,119),]
+
+# Calculate total species distribution area for species to be excluded based on minimal overlap
+outfile_excluded_sp <- data.frame("scientificName" = excluded_sp$scientificName,"area_total"=NA, "area_amt"=NA, "prop_overlap"=NA)
+
+for (i in 1:length(excluded_sp$scientificName)) {
+  curr_shape <- excluded_sp[i, "geometry"]
+  curr_area <- st_area(curr_shape)
+  outfile_excluded_sp$area_total[i] <- curr_area
+}
+
+# Calculate area of species distribution that intersects with the AMT
+
+for (i in 1:length(excluded_sp$scientificName)) {
+  curr_shape <- excluded_sp[i, "geometry"]
+  curr_intersect <- st_intersection(curr_shape, amt)
+  curr_area <- st_area(curr_intersect)
+  outfile_excluded_sp$area_amt[i] <- curr_area
+}
+
+for (i in 1:length(excluded_sp$scientificName)) {
+  prop_overlap <- (outfile_excluded_sp$area_amt[i] / outfile_excluded_sp$area_total[i])*100
+  outfile_excluded_sp$prop_overlap[i] <- prop_overlap
+}
+
 # Upon inspection, these 5 species have only a very slight distributional overlap with the AMT, 
 # so we will exclude them from the analysis.
 iucn_union_mod <- iucn_union_mod[-c(3,12,46,66,80,84,89,119),] # 138 species remaining
