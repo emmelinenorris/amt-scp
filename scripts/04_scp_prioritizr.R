@@ -120,19 +120,19 @@ s1.1 <- st_as_sf(s1.1) # Convert to sf
 s1.1x <- s1.1[, "solution_1", drop = FALSE]
 
 # Calculate number of selected planning units additional to existing PA network
-eval_n_summary(cp1.1, s1.1x)[[2]] - pa_pus # TOTAL PUs = 228
+eval_n_summary(cp1.1, s1.1x)[[2]] - pa_pus # TOTAL PUs = 596
 
 # Calculate total cost of solution
-eval_cost_summary(cp1.1, s1.1x)[[2]] - pa_cost # TOTAL COST = 19.88
+eval_cost_summary(cp1.1, s1.1x)[[2]] - pa_cost # TOTAL COST = 69.62
 
 # Calculate how well feature representation targets are met by a solution and 
 # the proportion of species' distributions covered
 tcs1.1 <- eval_target_coverage_summary(cp1.1, s1.1x) # 100% of targets for threatened species met or exceeded
 # Calculate overall species representation as the mean proportion of a species' range covered by the network
-mean(tcs1.1$relative_held) # 49.82%
+mean(tcs1.1$relative_held) # 54.32%
 
 # Calculate total area of PA network (including existing PAs)
-sum(st_area(s1.1[which(s1.1x$solution_1 == 1),]))/1000000 # Approx. 487228 km^2
+(sum(st_area(s1.1[which(s1.1x$solution_1 == 1),]))-pa_area)/1000000 # Approx. 487228 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
 eval_boundary_summary(cp1.1, s1.1x) # Boundary length = 29541.7 km
@@ -160,7 +160,9 @@ s1.1_df$category <- factor(s1.1_df$category, levels = c("Protected Area",
                                                         "Native Title land", 
                                                         "Native Title land - Pastoral use",
                                                         "Indigenous Land Use Agreement",
-                                                        "Pastoral term or perpetual lease"))
+                                                        "Indigenous Land Use Agreement - Pastoral use",
+                                                        "Pastoral term or perpetual lease",
+                                                        "Other freehold, term, perpetual lease or Crown purposes"))
 
 # Plot optimal solution
 ggplot(data = s1.1_df) +
@@ -193,7 +195,9 @@ ggplot(data = s1.1_df) +
                                "Native Title land", 
                                "Native Title land - Pastoral use",
                                "Indigenous Land Use Agreement",
-                               "Pastoral term or perpetual lease")) +
+                               "Indigenous Land Use Agreement - Pastoral use",
+                               "Pastoral term or perpetual lease",
+                               "Other freehold, term, perpetual lease or Crown purposes")) +
   geom_sf(data = amt, fill = "transparent", color = "black", size = 1) +
   geom_sf(data = wt, fill = "gray10", color = "black", size = 1) +
   theme_classic() +
@@ -207,7 +211,7 @@ ggplot(data = s1.1_df) +
         axis.ticks = element_blank(),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-30))
-
+plot(s1.1_plot)
 ggsave("04_sp1_1.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/scp", bg  = 'white')
 
 
@@ -227,21 +231,21 @@ s1.2 <- st_as_sf(s1.2) # Convert to sf
 s1.2x <- s1.2[, "solution_1", drop = FALSE]
 
 # Calculate number of selected planning units additional to existing PA network
-eval_n_summary(cp1.2, s1.2x)[[2]] - pa_pus # TOTAL PUs = 805
+eval_n_summary(cp1.2, s1.2x)[[2]] - pa_pus # TOTAL PUs = 693
 
 # Calculate total cost of solution
-eval_cost_summary(cp1.2, s1.2x)[[2]] - pa_cost # TOTAL COST = 104.90
+eval_cost_summary(cp1.2, s1.2x)[[2]] - pa_cost # TOTAL COST = 98.34
 
 # Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
 tcs1.2 <- eval_target_coverage_summary(cp1.2, s1.2x)
 # Calculate overall species representation as the mean proportion of a species' range covered by the network
-mean(tcs1.2$relative_held) # 53.65%
+mean(tcs1.2$relative_held) # 55.24%
 
-# Calculate total area of PA network (including existing PAs)
-sum(st_area(s1.2[which(s1.2x$solution_1 == 1),]))/1000000 # Approx. 571393 km^2
+# Calculate total area of PA network (excluding existing PAs)
+(sum(st_area(s1.2[which(s1.2x$solution_1 == 1),])) - pa_area)/1000000 # Approx. 102,163 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
-eval_boundary_summary(cp1.2, s1.2x[,1]) # Boundary length = 33,758 km
+eval_boundary_summary(cp1.2, s1.2x[,1])/1000 # Boundary length = 32,850 km
 
 # Calculate the number of selected PUs in each land use category
 s1.2_df <- s1.2 %>%
@@ -317,7 +321,7 @@ ggplot(data = s1.2_df) +
         axis.ticks = element_blank(),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-30))
-
+plot(s1.2_plot)
 ggsave("04_sp1_2.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/scp", bg  = 'white')
 
 
@@ -338,10 +342,10 @@ s2.1 <- st_as_sf(s2.1)
 s2.1x <- s2.1[, "solution_1", drop = FALSE]
 
 # Calculate number of selected planning units additional to existing PA network
-eval_n_summary(cp2.1, s2.1x)[[2]] - pa_pus # TOTAL PUs = 228
+eval_n_summary(cp2.1, s2.1x)[[2]] - pa_pus # TOTAL PUs = 598
 
 # Calculate total cost of solution
-eval_cost_summary(cp2.1, s2.1x)[[2]] - pa_cost # TOTAL COST = 20.32826
+eval_cost_summary(cp2.1, s2.1x)[[2]] - pa_cost # TOTAL COST = 73.15
 
 # Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
 tcs2.1 <- eval_target_coverage_summary(cp2.1, s2.1x[,1])
@@ -349,7 +353,7 @@ tcs2.1 <- eval_target_coverage_summary(cp2.1, s2.1x[,1])
 mean(tcs2.1$relative_held) # 49.80%
 
 # Calculate total area of PA network (including existing PAs)
-sum(st_area(s2.1[which(s2.1x$solution_1 == 1),]))/1000000 # Approx. 487232.2 km^2
+(sum(st_area(s2.1[which(s2.1x$solution_1 == 1),]))-pa_area)/1000000 # Approx. 487232.2 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
 eval_boundary_summary(cp2.1, s2.1x[,1]) # Boundary length = 28,891 km
@@ -421,7 +425,7 @@ ggplot(data = s2.1_df) +
         axis.ticks = element_blank(),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-30))
-
+plot(s2.1_plot)
 ggsave("04_sp2_1.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/scp", bg  = 'white')
 
 
@@ -441,10 +445,10 @@ s2.2 <- st_as_sf(s2.2)
 s2.2x <- s2.2[, "solution_1", drop = FALSE]
 
 # Calculate number of selected planning units additional to existing PA network
-eval_n_summary(cp2.2, s2.2x)[[2]] - pa_pus # TOTAL PUs = 853
+eval_n_summary(cp2.2, s2.2x)[[2]] - pa_pus # TOTAL PUs = 679
 
 # Calculate total cost of solution
-eval_cost_summary(cp2.2, s2.2x)[[2]] - pa_cost # TOTAL COST = 128
+eval_cost_summary(cp2.2, s2.2x)[[2]] - pa_cost # TOTAL COST = 120.33
 
 # Calculate how well feature representation targets are met by a solution and the proportion of species' distributions covered
 tcs2.2 <- eval_target_coverage_summary(cp2.2, s2.2x[,1])
@@ -452,7 +456,7 @@ tcs2.2 <- eval_target_coverage_summary(cp2.2, s2.2x[,1])
 mean(tcs2.2$relative_held) # 55.26%
 
 # Calculate total area of PA network (including existing PAs)
-sum(st_area(s2.2[which(s2.2x$solution_1 == 1),]))/1000000 # Approx. 577524 km^2
+(sum(st_area(s2.2[which(s2.2x$solution_1 == 1),]))-pa_area)/1000000 # Approx. 99,712 km^2
 
 # Calculate the exposed boundary length (perimeter) associated with a solution
 eval_boundary_summary(cp2.2, s2.2x[,1]) # Boundary length = 33,402 km
@@ -500,10 +504,7 @@ ggplot(data = s2.2_df) +
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
 
-
-# Plot optimal solution
-s2.2_plot 
-  
+# plot optimal solution 
 ggplot(data = s2.2_df) +
   geom_sf(mapping = aes(fill = factor(category)), color = "transparent") +
   scale_fill_viridis(discrete = T, alpha = 0.85, begin = 0.1, end = 0.75, option = "D", 
@@ -536,17 +537,21 @@ s1.1_plot <-
   scale_fill_manual(labels = c("Protected Area", 
                                 "Indigenous Protected Area", 
                                 "Freehold - Indigenous", 
-                                "Native Title land", 
+                                "Native Title land",
                                 "Native Title land - Pastoral use",
                                 "Indigenous Land Use Agreement",
-                                "Pastoral term or perpetual lease"),
-                     values = c("#433e85",
-                                "#38588c",
-                                "#25858e",
-                                "#2ab07f",
-                                "#52c569",
-                                "#86d549",
-                                "#fde725")) +
+                                "Indigenous Land Use Agreement - Pastoral use",
+                                "Pastoral term or perpetual lease",
+                                "Other freehold, term, perpetual lease or Crown purposes"),
+                    values = c("#433e85",
+                               "#38588c",
+                               "#25858e",
+                               "#2ab07f",
+                               "#52c569",
+                               "#86d549",
+                               "#c2df23",
+                               "#fde725",
+                               "#fb9f3a")) +
   geom_sf(data = amt, fill = "transparent", color = "black", size = 1) +
   geom_sf(data = wt, fill = "gray10", color = "black", size = 1) +
   theme_classic() +
@@ -559,7 +564,8 @@ s1.1_plot <-
         axis.text.y = element_blank(),
         axis.ticks = element_blank(),
         legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,0,-10,-30))
+        legend.box.margin=margin(-10,0,-10,-30)) + 
+  ggtitle('(a) Objective 1 (current risk)')
 
 s1.2_plot <-
   ggplot(data = s1.2_df) +
@@ -594,7 +600,8 @@ s1.2_plot <-
         axis.text.y = element_blank(),
         axis.ticks = element_blank(),
         legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,0,-10,-30))
+        legend.box.margin=margin(-10,0,-10,-30)) + 
+  ggtitle('(b) Objective 1 (positive latent risk)')
 
 # Plot optimal solution
 s2.1_plot <-
@@ -623,7 +630,8 @@ s2.1_plot <-
         axis.text.y = element_blank(),
         axis.ticks = element_blank(),
         legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,0,-10,-30))
+        legend.box.margin=margin(-10,0,-10,-30)) + 
+  ggtitle('(c) Objective 2 (current risk)')
 
 # Plot optimal solution
 s2.2_plot <-
@@ -652,7 +660,8 @@ ggplot(data = s2.2_df) +
         axis.text.y = element_blank(),
         axis.ticks = element_blank(),
         legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,0,-10,-30))
+        legend.box.margin=margin(-10,0,-10,-30)) + 
+  ggtitle('(d) Objective 2 (positive latent risk)')
 
 legend_plot <-
   ggplot(data = s1.2_df) +
@@ -665,8 +674,7 @@ legend_plot <-
                                "Indigenous land use agreement",
                                "Indigenous land use agreement - pastoral use",
                                "Pastoral term or perpetual lease",
-                               "Other freehold, term, perpetual lease or Crown purposes",
-                               ""),
+                               "Other freehold, term, perpetual lease or Crown purposes"),
                     values = c("#433e85",
                                "#38588c",
                                "#25858e",
@@ -693,13 +701,12 @@ grid::grid.draw(legend)
 
 ggsave("04_solutions_legend.png", legend, units="cm", width=13, height=8, dpi=300, path = "results/fig/scp", bg  = 'white')
 
-solutions_plot <- s1.1_plot + s1.2_plot + s2.1_plot + s2.2_plot +
-  plot_annotation(tag_levels = 'a') 
+solutions_plot <- s1.1_plot + s1.2_plot + s2.1_plot + s2.2_plot
 
 # Print the combined plot
 print(solutions_plot)
 
-ggsave("04_optimal_solution_plots.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/scp", bg  = 'white')
+ggsave("04_optimal_solution_plots_20240902.png", units="cm", width=28, height=14, dpi=600, path = "results/fig/scp", bg  = 'white')
 
 #### CALCULATE PROPORTION OF SPECIES' AMT DISTRIBUTION COVERED BY AMT PROTECTED AREA NETWORK ####
 
@@ -746,7 +753,8 @@ sel_freq <- bind_cols(
   data.frame(s1.1 = s1.1$solution_1),
   data.frame(s1.2 = s1.2$solution_1),
   data.frame(s2.1 = s2.1$solution_1),
-  data.frame(s2.2 = s2.2$solution_1)
+  data.frame(s2.2 = s2.2$solution_1),
+  pu_dat
 )
 
 # Add the geometry column and row sums
@@ -774,7 +782,77 @@ ggplot(data = sel_freq) +
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-20))
 
-ggsave("04_selection_frequency.png", units="cm", width=18, height=8, dpi=300, path = "results/fig/scp", bg  = 'white')
+ggsave("04_selection_frequency_20240902.png", units="cm", width=20, height=10, dpi=600, path = "results/fig/scp", bg  = 'white')
+
+#### PLOT PROPORTION OF LAND TENURE IN PUs OF DIFFERENT SELECTION FREQUENCIES ####
+
+sel_freq_tbl <- sel_freq %>%
+  group_by(row_sum, category) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  filter(!category %in% c("Protected Area", "Indigenous Protected Area"))  %>%
+  filter(!row_sum == 0)
+
+# Convert 'land_type' column to a factor with levels in the specific order
+sel_freq_tbl$category <- factor(sel_freq_tbl$category, levels = c("Freehold - Indigenous", 
+                                                                    "Native Title land", 
+                                                                    "Native Title land - Pastoral use",
+                                                                    "Indigenous Land Use Agreement",
+                                                                    "Indigenous Land Use Agreement - Pastoral use",
+                                                                    "Pastoral term or perpetual lease",
+                                                                    "Other freehold, term, perpetual lease or Crown purposes"))
+
+# Plot using ggplot2
+ggplot(sel_freq_tbl, aes(x = row_sum, y = count, fill = category)) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_y_continuous(limits = c(0,500), expand = c(0, 0)) +
+  scale_fill_manual(name = "Land tenure",
+                    labels = c("Indigenous freehold", 
+                               "Native title land", 
+                               "Native title land - pastoral use",
+                               "Indigenous land use agreement",
+                               "Indigenous land use agreement - pastoral use",
+                               "Pastoral term or perpetual lease",
+                               "Other freehold, term, perpetual lease or Crown purposes"),
+                    values = c("#25858e",
+                               "#2ab07f",
+                               "#52c569",
+                               "#86d549",
+                               "#c2df23",
+                               "#fde725",
+                               "#fb9f3a")) +
+  labs(y = "Count of planning units",
+       x = "Selection frequency") +
+  theme_classic() +
+  theme(legend.position = 'right',
+        legend.text = element_text(size = 13),
+        legend.key = element_rect(colour = "transparent"),
+        legend.title = element_text(size = 13, face = "bold"),
+        strip.text = element_text(size = 14, face = "bold"),
+        axis.text.x = element_text(size = 13),
+        axis.title.y = element_text(size = 14, face = "bold"),
+        axis.title.x = element_text(size = 14, face = "bold"),
+        axis.text.y = element_text(size = 13),
+        legend.margin=margin(0,0,0,0))
+
+ggsave("05_sel_freq_barplot_20240902.png", units="cm", width=30, height=15, dpi=600, path = "results/fig/scp", bg  = 'white')
+
+# Calculate the total count for each value of 'row_sum'
+total_counts <- sel_freq_tbl %>%
+  group_by(row_sum) %>%
+  summarize(total_count = sum(count, na.rm = TRUE), .groups = 'drop')
+
+# Calculate the count for each category within each 'row_sum'
+category_counts <- sel_freq_tbl %>%
+  group_by(row_sum, category) %>%
+  summarize(category_count = sum(count, na.rm = TRUE), .groups = 'drop') %>%
+  as.data.frame()
+
+# Merge the total counts with the category counts
+proportions <- category_counts %>%
+  left_join(total_counts, by = "row_sum") %>%
+  mutate(proportion = category_count / total_count)
+
+
 
 #### PLOT PROPORTION OF LAND TENURE IN PUS ####
 
@@ -808,6 +886,7 @@ combined_tenure <- s1.1_tenure %>%
   left_join(s1.2_tenure, by = "category") %>%
   left_join(s2.1_tenure, by = "category") %>%
   left_join(s2.2_tenure, by = "category") 
+combined_tenure <- combined_tenure[1:9,]
 
 
 # Reshape data into long format for plotting
@@ -875,4 +954,7 @@ ggplot(combined_long, aes(x = criteria, y = prop_selected, fill = category)) +
         axis.text.y = element_text(size = 14),
         legend.margin=margin(0,0,0,0))
 
-ggsave("04_proportion_tenure_boxplot.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/scp", bg  = 'white')
+ggsave("04_proportion_tenure_boxplot_20240902.png", units="cm", width=30, height=15, dpi=600, path = "results/fig/scp", bg  = 'white')
+
+
+

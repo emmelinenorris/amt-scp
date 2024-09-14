@@ -455,6 +455,81 @@ l2 <- ggplot(avg_latent_rast_df, aes(x = x, y = y, fill = mean)) +
         axis.ticks = element_blank(),  # Remove axis ticks
         axis.line = element_blank()) 
 
+
+#### CREATE MAPS OF SUM AND MEAN POSITIVE LATENT RISK ####
+
+# Extract species with positive latent risk values
+pos_ler <- iucn_threat[which(iucn_threat$latent_risk > 0),]
+pos_ler_rasters <- list()
+
+for (i in 1:length(pos_ler$scientificName)) {
+  curr_latent_risk <- pos_ler$latent_risk[i]
+  curr_vect <- vect(pos_ler[i, "geometry"]) # Convert the current geometry to a terra vector object
+  curr_rast <- rasterize(curr_vect, r_amt, field = curr_latent_risk, background = NA) # Rasterize the vector object using the template raster and threat vals
+  pos_ler_rasters[[i]] <- curr_rast # Store the raster in the list
+}
+
+# Combine the list of rasters into a single raster stack
+pos_latent_stack <- rast(pos_ler_rasters)
+
+# Calculate the net latent extinction risk for the AMT, excluding NA values
+sum_pos_latent_risk <- sum(pos_latent_stack, na.rm = TRUE) %>%
+  mask(r_amt)
+
+# Reproject to WGS84 (EPSG:4326) geographic coordinate system for plotting
+sum_pos_latent_risk <- project(sum_pos_latent_risk, "EPSG:4326")
+
+# Convert the raster data to a data frame
+sum_pos_latent_rast_df <- as.data.frame(sum_pos_latent_risk, xy = TRUE)
+
+# Plot the raster data using ggplot2
+pl1 <- ggplot(sum_pos_latent_rast_df, aes(x = x, y = y, fill = sum)) +
+  geom_raster() +
+  scale_fill_viridis_c(option = "D",
+                       breaks = seq(0, 40, by = 10), 
+                       labels = seq(0, 40, by = 10)) +
+  labs(fill = "Sum") +
+  theme_void() +
+  coord_fixed(ratio = 1 / cos(mean(sum_pos_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
+  theme(legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        axis.text = element_blank(),  # Remove axis text
+        axis.ticks = element_blank(),  # Remove axis ticks
+        axis.line = element_blank()) +
+  ggtitle('(a) Total positive latent risk')
+
+
+plot(pl1)
+
+# Calculate the mean latent extinction risk for the AMT, excluding NA values
+avg_pos_latent_risk <- mean(pos_latent_stack, na.rm = TRUE) %>%
+  mask(r_amt)
+
+# Reproject to WGS84 (EPSG:4326) geographic coordinate system for plotting
+avg_pos_latent_risk <- project(avg_pos_latent_risk, "EPSG:4326")
+
+# Convert the raster data to a data frame
+avg_pos_latent_rast_df <- as.data.frame(avg_pos_latent_risk, xy = TRUE)
+
+# Plot the raster data using ggplot2
+pl2 <- ggplot(avg_pos_latent_rast_df, aes(x = x, y = y, fill = mean)) +
+  geom_raster() +
+  scale_fill_viridis_c(option = "D",
+                       breaks = seq(0, 2, by = 0.5), 
+                       labels = seq(0, 2, by = 0.5)) +
+  labs(fill = "Mean") +
+  theme_void() +
+  coord_fixed(ratio = 1 / cos(mean(avg_pos_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
+  theme(legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        axis.text = element_blank(),  # Remove axis text
+        axis.ticks = element_blank(),  # Remove axis ticks
+        axis.line = element_blank())  + 
+  ggtitle('(b) Mean positive latent risk')
+
+plot(pl2)
+
+
 #### CREATE MAPS OF SUM AND MEAN CURRENT RISK ####
 
 # Initialize an empty list to store the raster layers
@@ -486,12 +561,15 @@ c1 <- ggplot(sum_curr_risk_df, aes(x = x, y = y, fill = sum)) +
                        labels = seq(0, 120, by = 20)) +
   labs(fill = "Sum") +
   theme_void() +
-  coord_fixed(ratio = 1 / cos(mean(sum_latent_rast_df$y) * pi / 180)) +  # Adjust for latitude
+  coord_fixed(ratio = 1 / cos(mean(sum_curr_risk_df$y) * pi / 180)) +  # Adjust for latitude
   theme(legend.text = element_text(size = 12),
         legend.title = element_text(size = 12),
         axis.text = element_blank(),  # Remove axis text
         axis.ticks = element_blank(),  # Remove axis ticks
-        axis.line = element_blank())
+        axis.line = element_blank()) + 
+  ggtitle('(c) Total current risk')
+
+plot(c1)
 
 # Calculate the mean latent extinction risk for the AMT, excluding NA values
 avg_curr_risk <- mean(curr_risk_stack, na.rm = TRUE) %>%
@@ -511,18 +589,21 @@ c2 <- ggplot(avg_curr_risk_df, aes(x = x, y = y, fill = mean)) +
                        labels = seq(0, 6, by = 1)) +
   labs(fill = "Mean") +
   theme_void() +
-  coord_fixed(ratio = 1 / cos(mean(avg_latent_rast_df$y) * pi / 180)) + 
+  coord_fixed(ratio = 1 / cos(mean(avg_curr_risk_df$y) * pi / 180)) + 
   theme(legend.text = element_text(size = 12),
         legend.title = element_text(size = 12),
         axis.text = element_blank(),  # Remove axis text
         axis.ticks = element_blank(),  # Remove axis ticks
-        axis.line = element_blank())
+        axis.line = element_blank()) + 
+  ggtitle('(d) Mean current risk')
+
+plot(c2)
 
 # Combine the four maps into a 2x2 grid
-combined_plot <- (l1 | l2) / (c1 | c2) + 
-  plot_annotation(tag_levels = 'a') 
+combined_plot <- (pl1 | pl2) / (c1 | c2)
 
 # Print the combined plot
 print(combined_plot)
 
-ggsave("02_combined_risk_plots.png", units="cm", width=30, height=15, dpi=300, path = "results/fig/pgls", bg  = 'white')
+ggsave("02_combined_risk_plots_PLER.png", units="cm", width=28, height=15, dpi=600, path = "results/fig/pgls", bg  = 'white')
+

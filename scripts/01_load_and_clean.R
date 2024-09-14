@@ -6,7 +6,7 @@
 # Code developed by Emmeline Norris, 01/06/2024
 # 
 ######################################################
-install.packages('ggthemes')
+install.packages('cowplot')
 library(sf)
 library(terra)
 library(tidyverse)
@@ -15,6 +15,8 @@ library(ggplot2)
 library(ape)
 library(usdm)
 library(ggthemes)
+library(ggspatial)
+library(cowplot)
 
 # Disable scientific notation
 options(scipen = 999)
@@ -111,7 +113,7 @@ ggplot() +
   theme(axis.title = element_text(size=12),
         axis.text = element_text(size = 10))
 
-ggsave("01_amt_ibra_bioregions.png", units="cm", width=20, height=16, dpi=300, path = "results/fig/amt", bg  = 'white')
+ggsave("01_amt_ibra_bioregions.png", units="cm", width=20, height=16, dpi=600, path = "results/fig/amt", bg  = 'white')
 
 
 # Now plot AMT with important places:
@@ -121,6 +123,7 @@ cities <- data.frame(
   name = c("DARWIN", "CAIRNS"),
   lat = c(-12.4634, -16.9186),
   lon = c(130.8456, 145.7781))
+
 # Create a data frame for cities
 city_names <- data.frame(
   name = c("DARWIN", "CAIRNS"),
@@ -142,7 +145,7 @@ town_names <- data.frame(
 regions <- data.frame(
   name = c("Cape\nYork\nPeninsula", "Kimberley", 
            "Top End"),
-  lat = c(-16, -16, -13.0000),
+  lat = c(-16, -16, -12.8),
   lon = c(142.9,127, 133))
 
 # Create a data frame for gaps
@@ -151,16 +154,21 @@ gaps <- data.frame(
   lat = c(-13.3, -15.0000),
   lon = c(128.3, 139.0000))
 
+# Extract centroids for bioregions
+ibra_amt <- ibra_amt %>%
+  mutate(centroid = st_centroid(geometry))
+
 # Crop bounding box to remove Badu, Moa, Boigu and Saibai islands
-aust_bbox <- st_bbox(c(xmin = 116, ymin = -22, xmax = 152, ymax = -8), crs = st_crs(4326))
+aust_bbox <- st_bbox(c(xmin = 119, ymin = -23, xmax = 148, ymax = -8), crs = st_crs(4326))
+
+aust_bbox_bound <- st_as_sfc(st_bbox(aust_bbox))
+
 aust_crop <- aust %>%
   st_transform(crs = st_crs(4326)) %>%
   st_crop(aust_bbox)
 
 aust_name <- data.frame(name = c("AUSTRALIA"),
-  lat = c(-20), lon = c(133))
-
-aust_bbox_bound <- st_as_sfc(st_bbox(aust_bbox))
+                        lat = c(-20), lon = c(133))
 
 # Create sf objects for cities, towns, regions, and gaps
 cities_sf <- st_as_sf(cities, coords = c("lon", "lat"), crs = 4326)
@@ -172,33 +180,72 @@ gaps_sf <- st_as_sf(gaps, coords = c("lon", "lat"), crs = 4326)
 aust_name_sf <- st_as_sf(aust_name, coords = c("lon", "lat"), crs = 4326)
 
 # Create the map
-ggplot() +
-  geom_sf(data = aust_crop, fill = "white", color = "#8da78a") +
-  geom_sf(data = aust_bbox_bound, color = "white", fill = "transparent", linewidth = 8) +
+main_map <- ggplot() +
+  geom_sf(data = aust_bbox_bound, fill = "#b4e7ff", color = "#b4e7ff") +
+  geom_sf(data = aust_crop, fill = "#f8ebdd", color = "#948d84") +
   geom_sf_text(data = aust_name_sf, aes(label = name), size = 5, fontface = "bold", color = 'gray70') +
   geom_sf(data = wt, fill = '#3e4a3d') +
-  geom_sf(data = ibra_amt, fill = '#c4d5c2', color = '#8da78a') +
+  geom_sf(data = ibra_amt, fill = '#c4d5c2', color = '#8da78a', alpha = 0.5) +
+  geom_sf_text(data = ibra_amt, aes(label = REG_CODE_7), size = 3, color = "#8c662a", alpha = 0.7, fontface = "bold") +
   geom_sf(data = cities_sf, color = "red", size = 3) +
   geom_sf_text(data = city_names_sf, aes(label = name), size = 3, fontface = "bold") +
   geom_sf(data = towns_sf, color = "black", size = 2) +
   geom_sf_text(data = town_names_sf, aes(label = name), size = 2.5) +
-  geom_sf_text(data = regions_sf, aes(label = name), size = 3.8, fontface = "bold", color = "#4e5d4d") +
+  geom_sf_text(data = regions_sf, aes(label = name), size = 4, fontface = "bold", color = "#3e4a3d") +
   geom_sf_text(data = gaps_sf, aes(label = name), size = 3, fontface = "italic", color = 'gray40') +
   xlab("Longitude") + ylab("Latitude") +
   theme_classic() +
-  theme(axis.title = element_text(size=12),
-        axis.text = element_text(size = 11),
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  coord_sf(expand = FALSE, crs = st_crs(4326), xlim = c(119, 148), ylim = c(-8, -22)) +  
+  theme(axis.ticks.length=unit(-0.25, "cm"),
+        axis.text = element_text(size = 14),
         legend.title = element_blank(),
         legend.position = "none",
-        axis.line = element_blank(),
+        #axis.line = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        plot.margin = unit(c(0,0,0,0), "cm")) 
+        axis.ticks = element_line(size = 0.5),
+        axis.line = element_line(size = 0.5),
+        #axis.text.x = element_blank(),
+        #axis.text.y = element_blank(),
+        #axis.ticks = element_blank(),
+        plot.margin = unit(c(0,1,0,0), "cm"),
+        panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) 
+plot(main_map)
 
-ggsave("01_amt_POI.png", units="cm", width=25, height=10, dpi=300, path = "results/fig/amt", bg  = 'white')
+ggsave("01_amt_POI_20240903.png", units="cm", width=25, height=10, dpi=300, path = "results/fig/amt", bg  = 'white')
+
+
+# Create the inset map showing AMT in Australia
+inset_map <- ggplot() +
+  geom_sf(data = aust, fill = "#f8ebdd", color = "#948d84") +
+  geom_sf(data = aust_bbox_bound, 
+          fill = "darkgreen",
+          color = 'transparent',
+          alpha = 0.2) +
+  coord_sf(crs = st_crs(4326), 
+           xlim = c(112, 155), 
+           ylim = c(-6, -45),
+           expand = FALSE) +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "white", color = "black"))
+plot(inset_map)
+
+
+ggdraw(main_map) +
+  draw_plot(
+    {inset_map},
+    # The distance along a (0,1) x-axis to draw the left edge of the plot
+    x = 0.01, 
+    # The distance along a (0,1) y-axis to draw the bottom edge of the plot
+    y = 0.58,
+    # The width and height of the plot expressed as proportion of the entire ggdraw object
+    width = 0.28, 
+    height = 0.28)
+
+ggsave("01_amt_mapinset_20240903.png", units="cm", width=25, height=14, dpi=600, path = "results/fig/amt", bg  = 'white')
+
+
 
 #### RASTER GRID FOR AUSTRALIA AND AMT ####
 
@@ -214,6 +261,7 @@ crs(r) # Check CRS is Albers Equal Area
 # Rasterize polygon of AMT to raster grid and crop extent
 r_amt <- rasterize(amt, r)
 plot(r_amt)
+
 # Export the raster as a TIFF file
 writeRaster(r_amt, filename="data/output-data/tif/01_r_amt.tif", overwrite=TRUE)
 
@@ -532,6 +580,11 @@ outfile_overlap <- outfile_overlap %>%
 filtered_overlap <- outfile_overlap %>%
   filter(percent_overlap >= 2)
 
+# Log transform and standardise geographic range area
+st_overlap <- filtered_overlap %>%
+  mutate(percentOverlap_st = as.vector(scale(percent_overlap)))
+
+
 # Find species remaining 
 model_species_v3 <- unique(filtered_overlap$scientificName) # 128 species
 
@@ -712,6 +765,7 @@ write_csv(amt_species_df, "data/output-data/tbl/01_amt_species_df.csv", append =
 data_frames <- list(
   amt_species_df,
   outfile_centroid,
+  st_overlap,
   st_combine,
   st_range,
   st_fox,
@@ -727,7 +781,7 @@ amt_dat <- reduce(data_frames, full_join, by = "scientificName") %>%
   filter(scientificName %in% model_species_v3)
 
 # Filter to keep species name, centroid coords, threat status, and transformed/standardised predictors
-amt_dat_st <- amt_dat[, c(1:4,11,13,15,17,19,22,25,28,30,32,35,39,42)]
+amt_dat_st <- amt_dat[, c(1:8,15,17,19,21,23,26,29,32,34,36,39,43,46)]
 # Remove rows with incomplete data
 amt_dat_st <- amt_dat_st[complete.cases(amt_dat_st),] # No rows removed
 # Substitute space with underscore in species scientificName to match phylogeny
@@ -742,17 +796,17 @@ saveRDS(amt_phy, file = "data/output-data/phy/01_amt_phy.rds")
 corr_mat <- cor(amt_dat_st[,unlist(lapply(amt_dat_st, is.numeric))], use = "complete.obs")
 
 # Run collinearity diagnostics using Variance Inflation Factor (VIF) cut-off of 5
-v_dat <- amt_dat_st[, c(5:17)]
+v_dat <- amt_dat_st[, c(8:21)]
 vif <- vifstep(v_dat)
 vif
 # Bio17 variable (precipitation of driest quarter) found to have collinearity problem
 # Generation length has high VIF (5.76)
 
 # Remove precipitation of wettest quarter and generation length from data frame of variables for extinction risk model
-amt_dat_st <- amt_dat_st[ , -c(9,16)]
+amt_dat_st <- amt_dat_st[ , -c(13,20)]
 
 # Run collinearity diagnostics again
-v_dat <- amt_dat_st[, c(5:15)]
+v_dat <- amt_dat_st[, c(8:19)]
 vif <- vifstep(v_dat)
 vif # No variables have a collinearity problem and none have VIF > 5
 

@@ -533,7 +533,7 @@ colnames(iucn_threat)[1:4] <- c("scientificName", "ordinalThreat", "mean_fitted"
 # Create vector of AMT species names
 amt_names <- iucn_threat$scientificName
 
-# Create raster stack of 138 species' distribution polygons including unique identifier and species scientific name
+# Create raster stack of 128 species' distribution polygons including unique identifier and species scientific name
 # Initialize an empty list to store the raster layers
 spec_rasters <- list()
 for (i in 1:length(iucn_threat$scientificName)) {
@@ -580,6 +580,10 @@ for (i in 1:length(iucn_amt$scientificName)) {
 spec_dat <- spec_dat %>%
   mutate(prop = pmin(area_amt/area_total, 1))
 
+# Calculate the proportion of each species' distributions that overlap with the AMT
+spec_dat <- spec_dat %>%
+  mutate(percent_overlap = (area_amt/area_total)*100)
+
 
 #### CALCULATE SPECIES REPRESENTATION TARGETS ####
 
@@ -601,7 +605,7 @@ normalise <- function(x) {
   # Normalize to 0-1 range
   norm_x <- (x - min(x, na.rm = TRUE)) / range_x
   # Scale to 0.01-100 range
-  scaled_x <- norm_x * (0.7 - 0.05) + 0.05
+  scaled_x <- norm_x * (0.75 - 0.25) + 0.25
   return(scaled_x)
 }
 
@@ -617,17 +621,17 @@ print(spec_dat$target_1)
 # Convert NA values to zeroes
 spec_dat <- spec_dat %>%
   mutate(
-    target_1 = if_else(target_1 > 0.70, 0.70, target_1),
+    target_1 = if_else(target_1 > 0.75, 0.75, target_1),
     target_1 = replace_na(target_1, 0))
 
 
 # TARGET 2: Calculate the POSITIVE LATENT RISK protection target for species
 # Calculate the 90th percentile of latent risk values
-stats::quantile(spec_dat$latent_risk, probs = 0.9, na.rm = T) # 1.467662
+stats::quantile(spec_dat$latent_risk, probs = 0.9, na.rm = T) # 1.508055
 
 # Create new column with only those species in the top 90th percentile of positive latent risk values 
 spec_dat <- spec_dat %>%
-  mutate(positiveLatentRisk = if_else(latent_risk > 1.467662, latent_risk, as.numeric(NA)))
+  mutate(positiveLatentRisk = if_else(latent_risk > 1.508055, latent_risk, as.numeric(NA)))
 # Fifteen species in this category again
 
 # Use min-max scaling to normalise latent risk scores to between 0 - 1
@@ -641,7 +645,7 @@ spec_dat$target_2 <- (alpha*spec_dat$latentRisk_scaled) + (beta*spec_dat$prop)
 print(spec_dat$target_2)
 # Convert NA values to zeroes and make any values > 0.9 equal 0.9 to ensure algorithm can run
 spec_dat <- spec_dat %>%
-  mutate( target_2 = if_else(target_2 > 0.70, 0.70, target_2),
+  mutate( target_2 = if_else(target_2 > 0.75, 0.75, target_2),
     target_2 = replace_na(target_2, 0))
 
 # Write spec_dat data frame to csv
@@ -669,6 +673,12 @@ sum_richness <- sum(richness_stack, na.rm = TRUE) %>%
   mask(r_amt)
 plot(sum_richness)
 
+# Reproject to WGS84 (EPSG:4326) geographic coordinate system for plotting
+sum_richness <- project(sum_richness, "EPSG:4326")
+
+# Convert the raster data to a data frame
+sum_richness_df <- as.data.frame(sum_richness, xy = TRUE)
+
 # Extract species richness for PUs
 pu_richness <- terra::extract(sum_richness, amt_grid_v4, method = 'bilinear', fun = modal, na.rm = T)
 
@@ -679,11 +689,20 @@ colnames(amt_grid_v5)[23] <- 'spec_richness'
 # Write final PU grid to shapefile
 st_write(amt_grid_v5, "data/output-data/shp/03_amt_pu_grid.shp", append = F)
 
-# Plot species richness
-ggplot() +
-  geom_sf(data = amt_grid_v5, aes(fill = spec_richness)) +
-  scale_fill_viridis_c() +
-  theme_minimal() +
-  labs(fill = "Species richness")
 
+# Plot the species richness
+ggplot(sum_richness_df, aes(x = x, y = y, fill = sum)) +
+  geom_raster() +
+  scale_fill_viridis_c(option = "B",
+                       breaks = seq(0, 60, by = 10), 
+                       labels = seq(0, 60, by = 10)) +
+  labs(fill = "Sum") +
+  theme_void() +
+  coord_fixed(ratio = 1 / cos(mean(sum_richness_df$y) * pi / 180)) +  # Adjust for latitude
+  theme(legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        axis.text = element_blank(),  # Remove axis text
+        axis.ticks = element_blank(),  # Remove axis ticks
+        axis.line = element_blank())
 
+ggsave("03_species_richness.png", units="cm", width=22, height=10, dpi=600, path = "results/fig/scp", bg  = 'white')
