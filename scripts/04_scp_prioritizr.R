@@ -543,10 +543,10 @@ s1.1_plot <-
                                 "Indigenous Land Use Agreement - Pastoral use",
                                 "Pastoral term or perpetual lease",
                                 "Other freehold, term, perpetual lease or Crown purposes"),
-                    values = c("#433e85",
-                               "#38588c",
-                               "#25858e",
-                               "#2ab07f",
+                    values = c("gray30",
+                               "gray50",
+                               "#00bdbd",
+                               "#218c65",
                                "#52c569",
                                "#86d549",
                                "#c2df23",
@@ -566,7 +566,7 @@ s1.1_plot <-
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-30)) + 
   ggtitle('(a) Objective 1 (current risk)')
-
+plot(s1.1_plot)
 s1.2_plot <-
   ggplot(data = s1.2_df) +
   geom_sf(mapping = aes(fill = factor(category)), color = "transparent") +
@@ -579,10 +579,10 @@ s1.2_plot <-
                                 "Indigenous Land Use Agreement - Pastoral use",
                                 "Pastoral term or perpetual lease",
                                 "Other freehold, term, perpetual lease or Crown purposes"),
-                    values = c("#433e85",
-                               "#38588c",
-                               "#25858e",
-                               "#2ab07f",
+                    values = c("gray30",
+                               "gray50",
+                               "#00bdbd",
+                               "#218c65",
                                "#52c569",
                                "#86d549",
                                "#c2df23",
@@ -602,7 +602,7 @@ s1.2_plot <-
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-30)) + 
   ggtitle('(b) Objective 1 (positive latent risk)')
-
+plot(s1.2_plot)
 # Plot optimal solution
 s2.1_plot <-
   ggplot(data = s2.1_df) +
@@ -612,12 +612,12 @@ s2.1_plot <-
                                 "Freehold - Indigenous", 
                                 "Native Title land", 
                                 "Native Title land - Pastoral use"),
-                    values = c("#433e85",
-                               "#38588c",
-                               "#25858e",
-                               "#2ab07f",
+                    values = c("gray30",
+                               "gray50",
+                               "#00bdbd",
+                               "#218c65",
                                "#52c569")) +
-  geom_sf(data = locked_out_ob2, fill = "gray70", color = "transparent") +
+  geom_sf(data = locked_out_ob2, fill = "gray80", color = "transparent") +
   geom_sf(data = amt, fill = "transparent", color = "black", size = 1) +
   geom_sf(data = wt, fill = "gray10", color = "black", size = 1) +
   theme_classic() +
@@ -632,7 +632,7 @@ s2.1_plot <-
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-30)) + 
   ggtitle('(c) Objective 2 (current risk)')
-
+plot(s2.1_plot)
 # Plot optimal solution
 s2.2_plot <-
 ggplot(data = s2.2_df) +
@@ -642,12 +642,12 @@ ggplot(data = s2.2_df) +
                                 "Freehold - Indigenous", 
                                 "Native Title land", 
                                 "Native Title land - Pastoral use"),
-                     values = c("#433e85",
-                                "#38588c",
-                                "#25858e",
-                                "#2ab07f",
+                     values = c("gray30",
+                                "gray50",
+                                "#00bdbd",
+                                "#218c65",
                                 "#52c569")) +
-  geom_sf(data = locked_out_ob2, fill = "gray70", color = "transparent") +
+  geom_sf(data = locked_out_ob2, fill = "gray80", color = "transparent") +
   geom_sf(data = amt, fill = "transparent", color = "black", size = 1) +
   geom_sf(data = wt, fill = "gray10", color = "black", size = 1) +
   theme_classic() +
@@ -662,7 +662,7 @@ ggplot(data = s2.2_df) +
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-30)) + 
   ggtitle('(d) Objective 2 (positive latent risk)')
-
+plot(s2.2_plot)
 legend_plot <-
   ggplot(data = s1.2_df) +
   geom_sf(mapping = aes(fill = factor(category)), color = "transparent") +
@@ -675,17 +675,17 @@ legend_plot <-
                                "Indigenous land use agreement - pastoral use",
                                "Pastoral term or perpetual lease",
                                "Other freehold, term, perpetual lease or Crown purposes"),
-                    values = c("#433e85",
-                               "#38588c",
-                               "#25858e",
-                               "#2ab07f",
+                    values = c("gray30",
+                               "gray50",
+                               "#00bdbd",
+                               "#218c65",
                                "#52c569",
                                "#86d549",
                                "#c2df23",
                                "#fde725",
                                "#fb9f3a")) +
   theme_classic() +
-  theme(legend.text = element_text(size = 11),
+  theme(legend.text = element_text(size = 12),
         legend.key = element_rect(colour = "transparent"),
         legend.title = element_blank(),
         axis.line = element_blank(),
@@ -706,7 +706,7 @@ solutions_plot <- s1.1_plot + s1.2_plot + s2.1_plot + s2.2_plot
 # Print the combined plot
 print(solutions_plot)
 
-ggsave("04_optimal_solution_plots_20240902.png", units="cm", width=28, height=14, dpi=600, path = "results/fig/scp", bg  = 'white')
+ggsave("04_optimal_solution_plots_20240920.png", units="cm", width=28, height=14, dpi=600, path = "results/fig/scp", bg  = 'white')
 
 #### CALCULATE PROPORTION OF SPECIES' AMT DISTRIBUTION COVERED BY AMT PROTECTED AREA NETWORK ####
 
@@ -768,10 +768,38 @@ sel_freq <- sel_freq %>%
 ggplot(data = sel_freq) +
   geom_sf(mapping = aes(fill = as.factor(row_sum)), color = "transparent") +
   scale_fill_manual(values = c("0" = "white", "1" = "#25858e", "2" = "#18be8f", "3" = "#86d549", "4" = "#e1e920")) +
-  geom_sf(data = protected_area, fill = "gray70", color = "transparent") +
+  geom_sf(data = protected_area, fill = "gray30", color = "transparent") +
+  geom_sf(data = ipa, fill = "gray50", color = "transparent") +
   geom_sf(data = amt, fill = "transparent", color = "black", size = 1) +
   geom_sf(data = wt, fill = "gray10", color = "black", size = 1) +
   theme_classic() +
+  theme(legend.position = "none",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank())
+
+ggsave("04_selection_frequency_20240921.png", units="cm", width=20, height=8, dpi=600, path = "results/fig/scp", bg  = 'white')
+
+# Create a data frame to use for the legend
+legend_data <- data.frame(
+  category = c('Protected areas', 'Indigenous Protected Areas',
+               '0', '1', '2', '3', '4'),
+  value = c(1, 2, 3, 4, 5, 6, 7)
+)
+
+legend_plot2 <- ggplot(legend_data, aes(x = value, fill = category)) +
+  geom_bar() +  # Add a layer for ggplot to generate the legend
+  scale_fill_manual(
+    values = c('Protected areas' = 'gray30', 
+               'Indigenous Protected Areas' = 'gray50',
+               '0' = 'white', 
+               '1' = '#25858e', 
+               '2' = '#18be8f', 
+               '3' = '#86d549', 
+               '4' = '#e1e920')
+  ) +
+  theme_void() +  # Remove all plot elements except the legend
   theme(legend.text = element_text(size = 10),
         legend.key = element_rect(colour = "gray40"),
         legend.title = element_blank(),
@@ -782,7 +810,14 @@ ggplot(data = sel_freq) +
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,0,-10,-20))
 
-ggsave("04_selection_frequency_20240902.png", units="cm", width=20, height=10, dpi=600, path = "results/fig/scp", bg  = 'white')
+# Extract the legend using cowplot
+legend2 <- cowplot::get_legend(legend_plot2)
+# Plot the legend
+grid::grid.newpage()
+grid::grid.draw(legend2)
+
+ggsave("04_selfreq_legend.png", legend2, units="cm", width=8, height=8, dpi=300, path = "results/fig/scp", bg  = 'white')
+
 
 #### PLOT PROPORTION OF LAND TENURE IN PUs OF DIFFERENT SELECTION FREQUENCIES ####
 

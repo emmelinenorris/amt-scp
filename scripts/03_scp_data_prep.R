@@ -337,8 +337,19 @@ ggplot() +
                                "#dfc27d", 
                                "#bf812d", 
                                "#8c510a")) +
-  geom_sf(data = amt, fill = "transparent", color = "gray20") +
-  theme_minimal()
+  #geom_sf(data = amt, fill = "transparent", color = "gray20") +
+  xlab("Longitude") + ylab("Latitude") +
+  coord_sf(crs = 4326) +
+  theme_minimal() +
+  theme(axis.title = element_text(size=12),
+        axis.text = element_text(size = 10), 
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 12, face = "bold"),
+        legend.position = "bottom") +
+  labs(fill = "Land tenure\ncategory") 
+  
+  ggsave("03_landtenure.png", units="cm", width=38, height=15, dpi=600, path = "results/fig/scp", bg  = 'white')
+
 
 # Create a new binary column indicating whether the PU can be voluntarily declared as an IPA (i.e., is native title land) and is not already protected
 amt_grid_v2 <- amt_grid_v2 %>%
@@ -421,8 +432,22 @@ ggplot() +
   geom_sf(data = amt) +
   geom_sf(data = amt_grid_v3, aes(fill = MED_INCOME)) +
   scale_fill_viridis_c() +
+  theme_classic() +
+  labs(fill = "Median Employee Income")
+
+ggplot(data = amt_grid_v3) +
+  geom_sf(mapping = aes(fill = MED_INCOME), color = "transparent") +
+  scale_fill_viridis_c() +
+  xlab("Longitude") + ylab("Latitude") +
+  coord_sf(crs = 4326) +
   theme_minimal() +
-  labs(fill = "Median Employee Income", title = "Median Employee Income by LGA")
+  theme(axis.title = element_text(size=12),
+        axis.text = element_text(size = 10), 
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10)) +
+  labs(fill = "Median Employee\nIncome (A$)") 
+
+ggsave("03_MEI.png", units="cm", width=20, height=8, dpi=600, path = "results/fig/scp", bg  = 'white')
 
 #### GENERATE COST PROXY LAYER ####
 
@@ -447,10 +472,19 @@ amt_grid_v4 <- amt_grid_v3 %>%
 # Plot HII for PUs
 ggplot() +
   geom_sf(data = amt) +
-  geom_sf(data = amt_grid_v4, aes(fill = hii_oceania)) +
+  geom_sf(data = amt_grid_v4, aes(fill = hii_oceania), color = "transparent") +
   scale_fill_viridis_c() +
+  xlab("Longitude") + ylab("Latitude") +
+  coord_sf(crs = 4326) +
   theme_minimal() +
-  labs(fill = "Human Influence Index (HII)")
+  theme(axis.title = element_text(size=12),
+        axis.text = element_text(size = 10), 
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10)) +
+  labs(fill = "Human Influence\nIndex (HII)")
+
+ggsave("03_HII.png", units="cm", width=20, height=8, dpi=600, path = "results/fig/scp", bg  = 'white')
+
 
 # Create function to normalise data with NA handling and scaling to 0.01-100
 normalise <- function(x) {
@@ -487,6 +521,21 @@ ggplot(amt_grid_v4, aes(x = category, y = cost, fill = category)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme(legend.position = "none")
 
+ggplot(data = amt_grid_v4) +
+  geom_sf(mapping = aes(fill = cost), color = "transparent") +
+  scale_fill_viridis_c() +
+  xlab("Longitude") + ylab("Latitude") +
+  coord_sf(crs = 4326) +
+  theme_minimal() +
+  theme(axis.title = element_text(size=12),
+        axis.text = element_text(size = 10), 
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10)) +
+  labs(fill = "Proxy Cost Value")
+
+ggsave("03_proxycost.png", units="cm", width=20, height=8, dpi=600, path = "results/fig/scp", bg  = 'white')
+
+
 # Adjust cost proxy to decrease the cost proxy for PUs on native title land or inalienable Indigenous freehold. This factor should be less than 1 to reduce the cost
 # Multiple native title/Indigenous freehold land by 0.3 to remove overlap in interquartile range of cost proxy values between land that is and is not native title
 amt_grid_v4$cost_adjusted <- ifelse(amt_grid_v4$declare_ipa == 1 | amt_grid_v4$category == "Freehold - Indigenous",
@@ -518,6 +567,8 @@ ggplot() +
 
 # For equal cost efficienc analysis give each PU a cost proxy value of 1
 amt_grid_v4$cost_equal <- 1
+
+
 
 #### CREATE SPEC_DAT DATA FRAME ####
 
